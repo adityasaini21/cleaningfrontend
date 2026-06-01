@@ -8,6 +8,7 @@ import '../services/order_history_service.dart';
 import '../services/cart_provider.dart';
 import 'dart:async';
 import '../services/notification_service.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class OrderHistoryScreen extends StatefulWidget {
   const OrderHistoryScreen({super.key});
@@ -35,6 +36,8 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
     super.initState();
 
     _loadOrders();
+
+
 
     _timer = Timer.periodic(
       const Duration(seconds: 1),
@@ -67,6 +70,22 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
 
   void _loadOrders() {
     _orders = _service.fetchMyOrders();
+  }
+  Future<void> _callDeliveryBoy(String phone) async {
+
+    final Uri uri = Uri(
+      scheme: 'tel',
+      path: phone,
+    );
+
+    if (await canLaunchUrl(uri)) {
+
+      await launchUrl(uri);
+
+    } else {
+
+      throw Exception("Could not launch phone dialer");
+    }
   }
 
   // ====================================
@@ -753,8 +772,31 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
 
                             SizedBox(height: 8),
 
-                            Text(
-                              "Phone: ${order.deliveryBoyPhone}",
+                            Row(
+
+                              children: [
+
+                                Expanded(
+
+                                  child: Text(
+                                    "Phone: ${order.deliveryBoyPhone}",
+                                  ),
+                                ),
+
+                                ElevatedButton.icon(
+
+                                  onPressed: () {
+
+                                    _callDeliveryBoy(
+                                      order.deliveryBoyPhone,
+                                    );
+                                  },
+
+                                  icon: const Icon(Icons.call),
+
+                                  label: const Text("Call"),
+                                ),
+                              ],
                             ),
                           ],
                         ),
