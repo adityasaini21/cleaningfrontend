@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "790945481784",
+    "project_id": "prem-chemicals",
+    "storage_bucket": "prem-chemicals.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:790945481784:android:3c669e7b5ec64fb5ed12cd",
+        "android_client_info": {
+          "package_name": "com.example.prem_chemicals_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDn5hdJ6_YnMFvy5H7K1v_2eP1SFKCRf94"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
