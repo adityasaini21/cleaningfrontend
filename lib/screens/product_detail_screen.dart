@@ -13,6 +13,8 @@ import '../models/category.dart';
 import '../services/cart_provider.dart';
 import '../services/product_service.dart';
 import '../services/auth_service.dart';
+import '../models/review.dart';
+import '../services/review_service.dart';
 
 class ProductDetailScreen extends StatefulWidget {
 
@@ -37,6 +39,9 @@ class _ProductDetailScreenState
 
   final ProductService _service =
   ProductService();
+
+  final ReviewService _reviewService =
+  ReviewService();
 
   final ImagePicker _picker =
   ImagePicker();
@@ -63,6 +68,9 @@ class _ProductDetailScreenState
   bool _isEditing = false;
 
   bool _isUploadingImage = false;
+  List<Review> _reviews = [];
+
+  bool _loadingReviews = true;
 
   List<Category> _categories = [];
 
@@ -99,6 +107,8 @@ class _ProductDetailScreenState
     _checkAdmin();
 
     _loadCategories();
+    _loadReviews();
+
 
     _nameController =
         TextEditingController(
@@ -173,6 +183,42 @@ class _ProductDetailScreenState
 
       debugPrint(
           "Category load error: $e");
+    }
+  }
+  // =========================================
+// LOAD REVIEWS
+// =========================================
+
+  Future<void> _loadReviews() async {
+
+    try {
+
+      final reviews =
+      await _reviewService.getProductReviews(
+        widget.product.id,
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+
+        _reviews = reviews;
+
+        _loadingReviews = false;
+      });
+
+    } catch (e) {
+
+      if (!mounted) return;
+
+      setState(() {
+
+        _loadingReviews = false;
+      });
+
+      debugPrint(
+        "Review load error: $e",
+      );
     }
   }
 
@@ -857,6 +903,100 @@ class _ProductDetailScreenState
                     const TextStyle(
                         fontSize: 15),
                   ),
+
+                  const SizedBox(height: 30),
+
+                  const Divider(),
+
+                  const SizedBox(height: 20),
+
+                  const Text(
+                    "Customer Reviews",
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  if (_loadingReviews)
+
+                    const Center(
+                      child: CircularProgressIndicator(),
+                    )
+
+                  else if (_reviews.isEmpty)
+
+                    const Text(
+                      "No reviews yet",
+                    )
+
+                  else
+
+                    Column(
+
+                      children: _reviews.map((review) {
+
+                        return Card(
+
+                          margin: const EdgeInsets.only(
+                            bottom: 12,
+                          ),
+
+                          child: Padding(
+
+                            padding: const EdgeInsets.all(12),
+
+                            child: Column(
+
+                              crossAxisAlignment:
+                              CrossAxisAlignment.start,
+
+                              children: [
+
+                                Row(
+
+                                  children: [
+
+                                    Text(
+                                      review.username,
+                                      style: const TextStyle(
+                                        fontWeight:
+                                        FontWeight.bold,
+                                      ),
+                                    ),
+
+                                    const Spacer(),
+
+                                    Row(
+
+                                      children: List.generate(
+
+                                        review.rating,
+
+                                            (index) => const Icon(
+                                          Icons.star,
+                                          color: Colors.amber,
+                                          size: 18,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+
+                                const SizedBox(height: 8),
+
+                                Text(
+                                  review.comment,
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+
+                      }).toList(),
+                    ),
 
                   const SizedBox(height: 80),
                 ],
