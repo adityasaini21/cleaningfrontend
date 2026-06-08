@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/cupertino.dart';
 import 'package:http/http.dart' as http;
 
 import '../models/review.dart';
@@ -19,20 +20,26 @@ class ReviewService {
       ),
     );
 
+    debugPrint(
+      "REVIEW STATUS: ${response.statusCode}",
+    );
+
+    debugPrint(
+      "REVIEW BODY: ${response.body}",
+    );
+
     if (response.statusCode == 200) {
 
       final List data =
       jsonDecode(response.body);
 
       return data
-          .map(
-            (e) => Review.fromJson(e),
-      )
+          .map((e) => Review.fromJson(e))
           .toList();
     }
 
     throw Exception(
-      "Failed to load reviews",
+      "Failed to load reviews. Status: ${response.statusCode}",
     );
   }
 

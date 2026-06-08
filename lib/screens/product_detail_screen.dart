@@ -193,9 +193,21 @@ class _ProductDetailScreenState
 
     try {
 
+      debugPrint(
+        "Loading reviews for product: ${widget.product.id}",
+      );
+
       final reviews =
       await _reviewService.getProductReviews(
         widget.product.id,
+      );
+
+      debugPrint(
+        "Reviews count: ${reviews.length}",
+      );
+
+      debugPrint(
+        "Reviews data: $reviews",
       );
 
       if (!mounted) return;
@@ -209,16 +221,16 @@ class _ProductDetailScreenState
 
     } catch (e) {
 
+      debugPrint(
+        "REVIEW ERROR => $e",
+      );
+
       if (!mounted) return;
 
       setState(() {
 
         _loadingReviews = false;
       });
-
-      debugPrint(
-        "Review load error: $e",
-      );
     }
   }
 
