@@ -193,21 +193,10 @@ class _ProductDetailScreenState
 
     try {
 
-      debugPrint(
-        "Loading reviews for product: ${widget.product.id}",
-      );
-
       final reviews =
-      await _reviewService.getProductReviews(
+      await _reviewService
+          .getProductReviews(
         widget.product.id,
-      );
-
-      debugPrint(
-        "Reviews count: ${reviews.length}",
-      );
-
-      debugPrint(
-        "Reviews data: $reviews",
       );
 
       if (!mounted) return;
@@ -221,17 +210,180 @@ class _ProductDetailScreenState
 
     } catch (e) {
 
-      debugPrint(
-        "REVIEW ERROR => $e",
-      );
-
       if (!mounted) return;
 
       setState(() {
 
         _loadingReviews = false;
       });
+
+      debugPrint(
+        "REVIEW ERROR => $e",
+      );
     }
+  }
+
+  Future<void> _showAddReviewDialog() async {
+
+    int rating = 5;
+
+    final commentController =
+    TextEditingController();
+
+    await showDialog(
+
+      context: context,
+
+      builder: (context) {
+
+        return StatefulBuilder(
+
+          builder: (context, setDialogState) {
+
+            return AlertDialog(
+
+              title: const Text(
+                "Write Review",
+              ),
+
+              content: Column(
+
+                mainAxisSize: MainAxisSize.min,
+
+                children: [
+
+                  Row(
+
+                    mainAxisAlignment:
+                    MainAxisAlignment.center,
+
+                    children: List.generate(
+
+                      5,
+
+                          (index) {
+
+                        return IconButton(
+
+                          onPressed: () {
+
+                            setDialogState(() {
+
+                              rating = index + 1;
+                            });
+                          },
+
+                          icon: Icon(
+
+                            Icons.star,
+
+                            color: index < rating
+                                ? Colors.amber
+                                : Colors.grey,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  TextField(
+
+                    controller:
+                    commentController,
+
+                    maxLines: 4,
+
+                    decoration:
+                    const InputDecoration(
+
+                      labelText: "Comment",
+
+                      border:
+                      OutlineInputBorder(),
+                    ),
+                  ),
+                ],
+              ),
+
+              actions: [
+
+                TextButton(
+
+                  onPressed: () {
+
+                    Navigator.pop(context);
+                  },
+
+                  child: const Text(
+                    "Cancel",
+                  ),
+                ),
+
+                ElevatedButton(
+
+                  onPressed: () async {
+
+                    try {
+
+                      await _reviewService
+                          .addReview(
+
+                        productId:
+                        widget.product.id,
+
+                        rating: rating,
+
+                        comment:
+                        commentController.text
+                            .trim(),
+                      );
+
+                      if (!mounted) return;
+
+                      Navigator.pop(context);
+
+                      await _loadReviews();
+
+                      ScaffoldMessenger.of(
+                          context)
+                          .showSnackBar(
+
+                        const SnackBar(
+
+                          content: Text(
+                            "Review added successfully",
+                          ),
+                        ),
+                      );
+
+                    } catch (e) {
+
+                      ScaffoldMessenger.of(
+                          context)
+                          .showSnackBar(
+
+                        SnackBar(
+
+                          content: Text(
+                            e.toString(),
+                          ),
+                        ),
+                      );
+                    }
+                  },
+
+                  child: const Text(
+                    "Submit",
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
   }
 
   // =========================================
@@ -922,12 +1074,39 @@ class _ProductDetailScreenState
 
                   const SizedBox(height: 20),
 
-                  const Text(
-                    "Customer Reviews",
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
+                  Row(
+
+                    children: [
+
+                      const Expanded(
+
+                        child: Text(
+
+                          "Customer Reviews",
+
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+
+                      if (!_isAdmin)
+
+                        ElevatedButton.icon(
+
+                          onPressed:
+                          _showAddReviewDialog,
+
+                          icon: const Icon(
+                            Icons.rate_review,
+                          ),
+
+                          label: const Text(
+                            "Review",
+                          ),
+                        ),
+                    ],
                   ),
 
                   const SizedBox(height: 16),
