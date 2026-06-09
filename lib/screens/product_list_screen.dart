@@ -765,6 +765,46 @@ class _ProductListScreenState
 
                           const SizedBox(height: 4),
 
+                          Row(
+
+                            children: [
+
+                              const Icon(
+                                Icons.star,
+                                color: Colors.amber,
+                                size: 16,
+                              ),
+
+                              const SizedBox(width: 4),
+
+                              Text(
+
+                                p.averageRating
+                                    .toStringAsFixed(1),
+
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+
+                              const SizedBox(width: 4),
+
+                              Text(
+
+                                "(${p.reviewCount})",
+
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey.shade600,
+                                ),
+                              ),
+                            ],
+                          ),
+
+
+                          const SizedBox(height: 4),
+
                           Text(
                             "₹${p.price}",
 

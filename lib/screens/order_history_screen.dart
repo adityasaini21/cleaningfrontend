@@ -99,7 +99,6 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
 
       Product product = Product(
 
-        // 🔥 REQUIRED FIELDS
         id: item.productId,
 
         name: item.productName,
@@ -117,6 +116,10 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
         categoryId: 0,
 
         categoryName: "",
+
+        averageRating: 0.0,
+
+        reviewCount: 0,
       );
 
       cart.addToCartWithQuantity(

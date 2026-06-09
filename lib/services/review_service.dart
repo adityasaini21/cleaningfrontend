@@ -91,4 +91,32 @@ class ReviewService {
       );
     }
   }
+  Future<bool> canReview(
+      int productId,
+      ) async {
+
+    final token = AuthService.token;
+
+    final response = await http.get(
+
+      Uri.parse(
+        "$baseUrl/can-review/$productId",
+      ),
+
+      headers: {
+
+        "Authorization":
+        "Bearer $token",
+      },
+    );
+
+    if (response.statusCode == 200) {
+
+      return jsonDecode(response.body);
+    }
+
+    throw Exception(
+      "Failed to check review permission",
+    );
+  }
 }

@@ -46,6 +46,10 @@ class _ProductDetailScreenState
   final ImagePicker _picker =
   ImagePicker();
 
+  bool _canReview = false;
+
+  bool _loadingCanReview = true;
+
   // =========================================
   // CLOUDINARY
   // =========================================
@@ -108,6 +112,7 @@ class _ProductDetailScreenState
 
     _loadCategories();
     _loadReviews();
+    _checkCanReview();
 
 
     _nameController =
@@ -132,6 +137,41 @@ class _ProductDetailScreenState
         TextEditingController(
             text:
             widget.product.imageUrl);
+  }
+
+  Future<void> _checkCanReview() async {
+
+    if (_isAdmin) return;
+
+    try {
+
+      final canReview =
+      await _reviewService.canReview(
+        widget.product.id,
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+
+        _canReview = canReview;
+
+        _loadingCanReview = false;
+      });
+
+    } catch (e) {
+
+      if (!mounted) return;
+
+      setState(() {
+
+        _loadingCanReview = false;
+      });
+
+      debugPrint(
+        "CAN REVIEW ERROR: $e",
+      );
+    }
   }
 
   // =========================================
@@ -1093,7 +1133,20 @@ class _ProductDetailScreenState
 
                       if (!_isAdmin)
 
-                        ElevatedButton.icon(
+                        _loadingCanReview
+
+                            ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child:
+                          CircularProgressIndicator(
+                            strokeWidth: 2,
+                          ),
+                        )
+
+                            : _canReview
+
+                            ? ElevatedButton.icon(
 
                           onPressed:
                           _showAddReviewDialog,
@@ -1104,6 +1157,36 @@ class _ProductDetailScreenState
 
                           label: const Text(
                             "Review",
+                          ),
+                        )
+
+                            : Container(
+
+                          padding:
+                          const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+
+                          decoration: BoxDecoration(
+
+                            color:
+                            Colors.green.shade50,
+
+                            borderRadius:
+                            BorderRadius.circular(
+                                20),
+                          ),
+
+                          child: const Text(
+
+                            "Buy to Review ✓",
+
+                            style: TextStyle(
+                              color: Colors.green,
+                              fontWeight:
+                              FontWeight.bold,
+                            ),
                           ),
                         ),
                     ],
