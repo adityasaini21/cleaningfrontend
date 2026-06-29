@@ -15,6 +15,7 @@ import '../services/product_service.dart';
 import '../services/auth_service.dart';
 import '../models/review.dart';
 import '../services/review_service.dart';
+import 'package:intl/intl.dart';
 
 class ProductDetailScreen extends StatefulWidget {
 
@@ -107,6 +108,7 @@ class _ProductDetailScreenState
   void initState() {
 
     super.initState();
+
 
     _checkAdmin();
 
@@ -618,6 +620,15 @@ class _ProductDetailScreenState
     setState(() {
       _isEditing = false;
     });
+  }
+  String formatReviewDate(DateTime date) {
+
+    return DateFormat(
+
+      "dd MMM yyyy",
+
+    ).format(date);
+
   }
 
   // =========================================
@@ -1231,17 +1242,48 @@ class _ProductDetailScreenState
 
                                 Row(
 
+                                  crossAxisAlignment:
+                                  CrossAxisAlignment.start,
+
                                   children: [
 
-                                    Text(
-                                      review.username,
-                                      style: const TextStyle(
-                                        fontWeight:
-                                        FontWeight.bold,
+                                    Expanded(
+
+                                      child: Column(
+
+                                        crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+
+                                        children: [
+
+                                          Text(
+
+                                            review.username,
+
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 16,
+                                            ),
+                                          ),
+
+                                          const SizedBox(height: 4),
+
+                                          Text(
+
+                                            review.updatedAt != null
+
+                                                ? "Edited • ${formatReviewDate(review.updatedAt!)}"
+
+                                                : "Reviewed • ${formatReviewDate(review.createdAt)}",
+
+                                            style: const TextStyle(
+                                              color: Colors.grey,
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
-
-                                    const Spacer(),
 
                                     Row(
 
@@ -1250,8 +1292,11 @@ class _ProductDetailScreenState
                                         review.rating,
 
                                             (index) => const Icon(
+
                                           Icons.star,
+
                                           color: Colors.amber,
+
                                           size: 18,
                                         ),
                                       ),
@@ -1259,7 +1304,7 @@ class _ProductDetailScreenState
                                   ],
                                 ),
 
-                                const SizedBox(height: 8),
+                                const SizedBox(height: 12),
 
                                 Text(
                                   review.comment,
@@ -1281,4 +1326,5 @@ class _ProductDetailScreenState
       ),
     );
   }
+
 }

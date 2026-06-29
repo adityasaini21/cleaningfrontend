@@ -5,6 +5,7 @@ class Review {
   final int rating;
   final String comment;
   final DateTime createdAt;
+  final DateTime? updatedAt;
 
   Review({
     required this.id,
@@ -12,6 +13,9 @@ class Review {
     required this.rating,
     required this.comment,
     required this.createdAt,
+
+    this.updatedAt,
+
   });
 
   factory Review.fromJson(
@@ -24,6 +28,16 @@ class Review {
       comment: json["comment"] ?? "",
       createdAt: DateTime.parse(
         json["createdAt"],
+
+      ),
+      updatedAt: json["updatedAt"] == null
+
+          ? null
+
+          : DateTime.parse(
+
+        json["updatedAt"],
+
       ),
     );
   }

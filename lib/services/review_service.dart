@@ -60,6 +60,10 @@ class ReviewService {
       throw Exception("User not logged in");
 
     }
+    debugPrint("JWT: $token");
+    debugPrint("PRODUCT ID: $productId");
+    debugPrint("RATING: $rating");
+    debugPrint("COMMENT: $comment");
 
     final response = await http.post(
 
@@ -86,8 +90,11 @@ class ReviewService {
 
     if (response.statusCode != 200) {
 
+      debugPrint("ADD REVIEW STATUS: ${response.statusCode}");
+      debugPrint("ADD REVIEW BODY: ${response.body}");
+
       throw Exception(
-        "Failed to add review",
+        "Status: ${response.statusCode}\n${response.body}",
       );
     }
   }

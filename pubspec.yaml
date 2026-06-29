@@ -38,6 +38,7 @@ dependencies:
   salomon_bottom_bar: ^3.3.2
   cupertino_icons: ^1.0.8
   razorpay_flutter: ^1.4.1
+  intl: ^0.20.2
 
 
   fl_chart: ^0.68.0
