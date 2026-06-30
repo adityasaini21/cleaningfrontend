@@ -10,6 +10,7 @@ import 'package:cloudinary_public/cloudinary_public.dart';
 import '../models/product.dart';
 import '../models/category.dart';
 
+import '../models/review_summary.dart';
 import '../services/cart_provider.dart';
 import '../services/product_service.dart';
 import '../services/auth_service.dart';
@@ -73,6 +74,8 @@ class _ProductDetailScreenState
   bool _isEditing = false;
 
   bool _isUploadingImage = false;
+  ReviewSummary? _summary;
+
   List<Review> _reviews = [];
 
   bool _loadingReviews = true;
@@ -235,7 +238,7 @@ class _ProductDetailScreenState
 
     try {
 
-      final reviews =
+      final summary =
       await _reviewService
           .getProductReviews(
         widget.product.id,
@@ -245,7 +248,10 @@ class _ProductDetailScreenState
 
       setState(() {
 
-        _reviews = reviews;
+        _reviews = summary.reviews;
+
+
+        _summary = summary;
 
         _loadingReviews = false;
       });
@@ -629,6 +635,72 @@ class _ProductDetailScreenState
 
     ).format(date);
 
+  }
+  Widget _buildRatingRow(
+      int stars,
+      int count,
+      int total,
+      ) {
+
+    return Padding(
+
+      padding: const EdgeInsets.symmetric(
+        vertical: 4,
+      ),
+
+      child: Row(
+
+        children: [
+
+          SizedBox(
+
+            width: 35,
+
+            child: Text(
+              "$stars ★",
+              style: const TextStyle(
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+
+          Expanded(
+
+            child: ClipRRect(
+
+              borderRadius:
+              BorderRadius.circular(10),
+
+              child: LinearProgressIndicator(
+
+                value: total == 0
+                    ? 0
+                    : count / total,
+
+                minHeight: 8,
+
+                backgroundColor:
+                Colors.grey.shade300,
+
+                color: Colors.amber,
+              ),
+            ),
+          ),
+
+          const SizedBox(width: 12),
+
+          SizedBox(
+
+            width: 30,
+
+            child: Text(
+              count.toString(),
+              textAlign: TextAlign.end,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   // =========================================
@@ -1125,81 +1197,195 @@ class _ProductDetailScreenState
 
                   const SizedBox(height: 20),
 
-                  Row(
+                  Column(
+
+                    crossAxisAlignment:
+                    CrossAxisAlignment.start,
 
                     children: [
 
-                      const Expanded(
+                      Row(
 
-                        child: Text(
+                        crossAxisAlignment:
+                        CrossAxisAlignment.start,
 
-                          "Customer Reviews",
+                        children: [
 
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
+                          Expanded(
 
-                      if (!_isAdmin)
+                            child: Column(
 
-                        _loadingCanReview
+                              crossAxisAlignment:
+                              CrossAxisAlignment.start,
 
-                            ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child:
-                          CircularProgressIndicator(
-                            strokeWidth: 2,
-                          ),
-                        )
+                              children: [
 
-                            : _canReview
+                                const Text(
 
-                            ? ElevatedButton.icon(
+                                  "Customer Reviews",
 
-                          onPressed:
-                          _showAddReviewDialog,
+                                  style: TextStyle(
 
-                          icon: const Icon(
-                            Icons.rate_review,
-                          ),
+                                    fontSize: 22,
 
-                          label: const Text(
-                            "Review",
-                          ),
-                        )
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
 
-                            : Container(
+                                const SizedBox(height: 10),
 
-                          padding:
-                          const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 8,
-                          ),
+                                if (_summary != null)
 
-                          decoration: BoxDecoration(
+                                  Row(
 
-                            color:
-                            Colors.green.shade50,
+                                    children: [
 
-                            borderRadius:
-                            BorderRadius.circular(
-                                20),
-                          ),
+                                      Text(
 
-                          child: const Text(
+                                        _summary!.averageRating
+                                            .toStringAsFixed(1),
 
-                            "Buy to Review ✓",
+                                        style: const TextStyle(
 
-                            style: TextStyle(
-                              color: Colors.green,
-                              fontWeight:
-                              FontWeight.bold,
+                                          fontSize: 42,
+
+                                          fontWeight:
+                                          FontWeight.bold,
+                                        ),
+                                      ),
+
+                                      const SizedBox(width: 8),
+
+                                      const Icon(
+
+                                        Icons.star,
+
+                                        color: Colors.amber,
+
+                                        size: 36,
+                                      ),
+                                    ],
+                                  ),
+
+                                if (_summary != null)
+
+                                  Text(
+
+                                    "${_summary!.reviewCount} Reviews",
+
+                                    style: TextStyle(
+
+                                      color: Colors.grey.shade700,
+
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                              ],
                             ),
                           ),
+
+                          if (!_isAdmin)
+
+                            _loadingCanReview
+
+                                ? const SizedBox(
+
+                              width: 22,
+
+                              height: 22,
+
+                              child:
+                              CircularProgressIndicator(
+                                strokeWidth: 2,
+                              ),
+                            )
+
+                                : _canReview
+
+                                ? ElevatedButton.icon(
+
+                              onPressed:
+                              _showAddReviewDialog,
+
+                              icon: const Icon(
+                                Icons.rate_review,
+                              ),
+
+                              label: const Text(
+                                "Review",
+                              ),
+                            )
+
+                                : Container(
+
+                              padding:
+                              const EdgeInsets.symmetric(
+
+                                horizontal: 12,
+
+                                vertical: 8,
+                              ),
+
+                              decoration: BoxDecoration(
+
+                                color:
+                                Colors.green.shade50,
+
+                                borderRadius:
+                                BorderRadius.circular(
+                                    20),
+                              ),
+
+                              child: const Text(
+
+                                "Buy to Review ✓",
+
+                                style: TextStyle(
+
+                                  color: Colors.green,
+
+                                  fontWeight:
+                                  FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 20),
+
+                      if (_summary != null) ...[
+
+                        _buildRatingRow(
+                          5,
+                          _summary!.fiveStar,
+                          _summary!.reviewCount,
                         ),
+
+                        _buildRatingRow(
+                          4,
+                          _summary!.fourStar,
+                          _summary!.reviewCount,
+                        ),
+
+                        _buildRatingRow(
+                          3,
+                          _summary!.threeStar,
+                          _summary!.reviewCount,
+                        ),
+
+                        _buildRatingRow(
+                          2,
+                          _summary!.twoStar,
+                          _summary!.reviewCount,
+                        ),
+
+                        _buildRatingRow(
+                          1,
+                          _summary!.oneStar,
+                          _summary!.reviewCount,
+                        ),
+                      ],
                     ],
                   ),
 
