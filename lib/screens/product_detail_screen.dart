@@ -642,10 +642,13 @@ class _ProductDetailScreenState
       int total,
       ) {
 
+    final percentage =
+    total == 0 ? 0.0 : count / total;
+
     return Padding(
 
       padding: const EdgeInsets.symmetric(
-        vertical: 4,
+        vertical: 6,
       ),
 
       child: Row(
@@ -657,33 +660,56 @@ class _ProductDetailScreenState
             width: 35,
 
             child: Text(
+
               "$stars ★",
+
               style: const TextStyle(
-                fontWeight: FontWeight.w500,
+
+                fontWeight: FontWeight.w600,
               ),
             ),
           ),
 
+          const SizedBox(width: 8),
+
           Expanded(
 
-            child: ClipRRect(
+            child: TweenAnimationBuilder<double>(
 
-              borderRadius:
-              BorderRadius.circular(10),
-
-              child: LinearProgressIndicator(
-
-                value: total == 0
-                    ? 0
-                    : count / total,
-
-                minHeight: 8,
-
-                backgroundColor:
-                Colors.grey.shade300,
-
-                color: Colors.amber,
+              tween: Tween(
+                begin: 0,
+                end: percentage,
               ),
+
+              duration: Duration(
+                milliseconds: 500 + (stars * 200),
+              ),
+
+              curve: Curves.easeOutCubic,
+
+              builder: (context, value, child) {
+
+                return ClipRRect(
+
+                  borderRadius:
+                  BorderRadius.circular(20),
+
+                  child: LinearProgressIndicator(
+
+                    value: value,
+
+                    minHeight: 10,
+
+                    backgroundColor:
+                    Colors.grey.shade300,
+
+                    valueColor:
+                    const AlwaysStoppedAnimation(
+                      Colors.amber,
+                    ),
+                  ),
+                );
+              },
             ),
           ),
 
@@ -691,11 +717,26 @@ class _ProductDetailScreenState
 
           SizedBox(
 
-            width: 30,
+            width: 28,
 
-            child: Text(
-              count.toString(),
-              textAlign: TextAlign.end,
+            child: AnimatedSwitcher(
+
+              duration:
+              const Duration(milliseconds: 400),
+
+              child: Text(
+
+                "$count",
+
+                key: ValueKey(count),
+
+                textAlign: TextAlign.end,
+
+                style: const TextStyle(
+
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
           ),
         ],
@@ -1240,18 +1281,33 @@ class _ProductDetailScreenState
 
                                     children: [
 
-                                      Text(
+                                      TweenAnimationBuilder<double>(
 
-                                        _summary!.averageRating
-                                            .toStringAsFixed(1),
-
-                                        style: const TextStyle(
-
-                                          fontSize: 42,
-
-                                          fontWeight:
-                                          FontWeight.bold,
+                                        tween: Tween(
+                                          begin: 0,
+                                          end: _summary!.averageRating,
                                         ),
+
+                                        duration: const Duration(
+                                          milliseconds: 1200,
+                                        ),
+
+                                        curve: Curves.easeOut,
+
+                                        builder: (context, value, child) {
+
+                                          return Text(
+
+                                            value.toStringAsFixed(1),
+
+                                            style: const TextStyle(
+
+                                              fontSize: 42,
+
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          );
+                                        },
                                       ),
 
                                       const SizedBox(width: 8),
@@ -1269,16 +1325,31 @@ class _ProductDetailScreenState
 
                                 if (_summary != null)
 
-                                  Text(
+                                  TweenAnimationBuilder<int>(
 
-                                    "${_summary!.reviewCount} Reviews",
-
-                                    style: TextStyle(
-
-                                      color: Colors.grey.shade700,
-
-                                      fontSize: 16,
+                                    tween: IntTween(
+                                      begin: 0,
+                                      end: _summary!.reviewCount,
                                     ),
+
+                                    duration: const Duration(
+                                      milliseconds: 1000,
+                                    ),
+
+                                    builder: (context, value, child) {
+
+                                      return Text(
+
+                                        "$value Reviews",
+
+                                        style: TextStyle(
+
+                                          color: Colors.grey.shade700,
+
+                                          fontSize: 16,
+                                        ),
+                                      );
+                                    },
                                   ),
                               ],
                             ),
