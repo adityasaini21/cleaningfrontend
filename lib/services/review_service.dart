@@ -125,4 +125,31 @@ class ReviewService {
       "Failed to check review permission",
     );
   }
+
+  Future<void> markHelpful(
+      int reviewId,
+      ) async {
+
+    final token = AuthService.token;
+
+    final response = await http.post(
+
+      Uri.parse(
+        "$baseUrl/$reviewId/helpful",
+      ),
+
+      headers: {
+
+        "Authorization":
+        "Bearer $token",
+      },
+    );
+
+    if (response.statusCode != 200) {
+
+      throw Exception(
+        "Failed to mark helpful",
+      );
+    }
+  }
 }

@@ -1634,6 +1634,105 @@ class _ProductDetailScreenState
                                 Text(
                                   review.comment,
                                 ),
+
+                                const SizedBox(height: 14),
+
+                                Row(
+
+                                  children: [
+
+                                    if (!review.ownReview)
+
+                                      TextButton.icon(
+
+                                        onPressed: review.helpfulByCurrentUser
+
+                                            ? null
+
+                                            : () async {
+
+                                          try {
+
+                                            await _reviewService.markHelpful(
+                                              review.id,
+                                            );
+
+                                            await _loadReviews();
+
+                                          } catch (e) {
+
+                                            if (!mounted) return;
+
+                                            ScaffoldMessenger.of(context).showSnackBar(
+
+                                              SnackBar(
+                                                content: Text(
+                                                  e.toString(),
+                                                ),
+                                              ),
+                                            );
+                                          }
+                                        },
+
+                                        icon: Icon(
+
+                                          review.helpfulByCurrentUser
+
+                                              ? Icons.thumb_up
+
+                                              : Icons.thumb_up_alt_outlined,
+
+                                          size: 18,
+
+                                          color: review.helpfulByCurrentUser
+                                              ? Colors.blue
+                                              : null,
+                                        ),
+
+                                        label: Text(
+
+                                          review.helpfulByCurrentUser
+
+                                              ? "Helpful"
+
+                                              : "Helpful?",
+
+                                          style: TextStyle(
+
+                                            color: review.helpfulByCurrentUser
+                                                ? Colors.blue
+                                                : null,
+                                          ),
+                                        ),
+                                      ),
+
+                                    if (!review.ownReview)
+                                      const SizedBox(width: 8),
+
+                                    AnimatedSwitcher(
+
+                                      duration: const Duration(
+                                        milliseconds: 350,
+                                      ),
+
+                                      child: Text(
+
+                                        review.helpfulCount == 1
+                                            ? "1 person found this helpful"
+                                            : "${review.helpfulCount} people found this helpful",
+
+                                        key: ValueKey(review.helpfulCount),
+
+                                        style: TextStyle(
+
+                                          color: Colors.grey.shade700,
+
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ],
                             ),
                           ),

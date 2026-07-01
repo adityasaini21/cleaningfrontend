@@ -14,6 +14,11 @@ class Review {
 
   final bool verifiedPurchase;
 
+  final int helpfulCount;
+
+  final bool helpfulByCurrentUser;
+  final bool ownReview;
+
   Review({
 
     required this.id,
@@ -29,6 +34,11 @@ class Review {
     required this.verifiedPurchase,
 
     this.updatedAt,
+
+    required this.helpfulCount,
+    required this.helpfulByCurrentUser,
+    required this.ownReview,
+
   });
 
   factory Review.fromJson(
@@ -58,6 +68,13 @@ class Review {
 
       verifiedPurchase:
       json["verifiedPurchase"] ?? false,
+
+      helpfulCount: json["helpfulCount"] ?? 0,
+
+      helpfulByCurrentUser:
+      json["helpfulByCurrentUser"] ?? false,
+      ownReview: json["ownReview"] ?? false,
     );
   }
 }
+
