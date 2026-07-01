@@ -1513,14 +1513,82 @@ class _ProductDetailScreenState
 
                                         children: [
 
-                                          Text(
+                                          Row(
 
-                                            review.username,
+                                            children: [
 
-                                            style: const TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 16,
-                                            ),
+                                              Text(
+
+                                                review.username,
+
+                                                style: const TextStyle(
+
+                                                  fontWeight: FontWeight.bold,
+
+                                                  fontSize: 16,
+                                                ),
+                                              ),
+
+                                              if (review.verifiedPurchase) ...[
+
+                                                const SizedBox(width: 8),
+
+                                                Container(
+
+                                                  padding: const EdgeInsets.symmetric(
+
+                                                    horizontal: 8,
+
+                                                    vertical: 3,
+                                                  ),
+
+                                                  decoration: BoxDecoration(
+
+                                                    color: Colors.green.shade50,
+
+                                                    borderRadius:
+                                                    BorderRadius.circular(20),
+
+                                                    border: Border.all(
+                                                      color: Colors.green.shade300,
+                                                    ),
+                                                  ),
+
+                                                  child: const Row(
+
+                                                    mainAxisSize: MainAxisSize.min,
+
+                                                    children: [
+
+                                                      Icon(
+
+                                                        Icons.verified,
+
+                                                        size: 14,
+
+                                                        color: Colors.green,
+                                                      ),
+
+                                                      SizedBox(width: 4),
+
+                                                      Text(
+
+                                                        "Verified Purchase",
+
+                                                        style: TextStyle(
+
+                                                          color: Colors.green,
+
+                                                          fontWeight: FontWeight.bold,
+
+                                                          fontSize: 11,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ],
+                                            ],
                                           ),
 
                                           const SizedBox(height: 4),
