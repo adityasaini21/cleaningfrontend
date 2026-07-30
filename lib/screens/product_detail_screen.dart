@@ -896,6 +896,7 @@ class _ProductDetailScreenState
               ),
             ),
 
+
             const SizedBox(height: 20),
 
             Padding(
@@ -1018,7 +1019,7 @@ class _ProductDetailScreenState
                     ),
                   ),
 
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 12),
 
                   // =====================================
                   // PRICE
@@ -1058,7 +1059,7 @@ class _ProductDetailScreenState
                     ),
                   ),
 
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 8),
 
                   // =====================================
                   // STOCK
@@ -1103,7 +1104,7 @@ class _ProductDetailScreenState
                     ),
                   ),
 
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 16),
 
                   // =====================================
                   // IMAGE URL + UPLOAD
@@ -1374,49 +1375,35 @@ class _ProductDetailScreenState
                                 : _canReview
 
                                 ? ElevatedButton.icon(
-
-                              onPressed:
-                              _showAddReviewDialog,
-
-                              icon: const Icon(
-                                Icons.rate_review,
-                              ),
-
-                              label: const Text(
-                                "Review",
+                              onPressed: _showAddReviewDialog,
+                              icon: const Icon(Icons.rate_review),
+                              label: const Text("Write Review"),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.green.shade50,
+                                foregroundColor: Colors.green,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 8,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
                               ),
                             )
-
                                 : Container(
-
-                              padding:
-                              const EdgeInsets.symmetric(
-
+                              padding: const EdgeInsets.symmetric(
                                 horizontal: 12,
-
                                 vertical: 8,
                               ),
-
                               decoration: BoxDecoration(
-
-                                color:
-                                Colors.green.shade50,
-
-                                borderRadius:
-                                BorderRadius.circular(
-                                    20),
+                                color: Colors.grey.shade200,
+                                borderRadius: BorderRadius.circular(20),
                               ),
-
                               child: const Text(
-
-                                "Buy to Review ✓",
-
+                                "Buy to Review",
                                 style: TextStyle(
-
-                                  color: Colors.green,
-
-                                  fontWeight:
-                                  FontWeight.bold,
+                                  color: Colors.grey,
+                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
                             ),

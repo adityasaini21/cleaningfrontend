@@ -540,16 +540,13 @@ class CartScreen extends StatelessWidget {
 
                 child: ElevatedButton(
 
-                  onPressed: () {
-
+                  onPressed: cart.items.isEmpty
+                      ? null
+                      : () {
                     Navigator.push(
-
                       context,
-
                       MaterialPageRoute(
-
-                        builder: (_) =>
-                        const CheckoutScreen(),
+                        builder: (_) => const CheckoutScreen(),
                       ),
                     );
                   },
