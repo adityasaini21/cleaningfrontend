@@ -3,11 +3,11 @@ import 'package:http/http.dart' as http;
 
 import '../services/auth_service.dart';
 import '../models/cart_item.dart';
+import '../core/api_client.dart';
 
 class OrderService {
 
-  final String baseUrl =
-      "http://10.0.2.2:8080";
+  final String baseUrl = ApiClient.baseUrl;
 
   // =========================================
   // CHECK DELIVERY PINCODE

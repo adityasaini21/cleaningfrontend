@@ -6,11 +6,12 @@ import 'package:http/http.dart' as http;
 import '../models/review.dart';
 import '../models/review_summary.dart';
 import 'auth_service.dart';
+import '../core/api_client.dart';
 
 class ReviewService {
 
   static const String baseUrl =
-      "http://10.0.2.2:8080/api/reviews";
+      "${ApiClient.baseUrl}/api/reviews";
 
   Future<ReviewSummary> getProductReviews(
       int productId) async {

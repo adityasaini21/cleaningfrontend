@@ -4,11 +4,11 @@ import 'package:http/http.dart' as http;
 
 import '../models/order.dart';
 import 'auth_service.dart';
+import '../core/api_client.dart';
 
 class OrderHistoryService {
 
-  final String baseUrl =
-      "http://10.0.2.2:8080";
+  final String baseUrl = ApiClient.baseUrl;
 
   // =========================================
   // COMMON HEADERS

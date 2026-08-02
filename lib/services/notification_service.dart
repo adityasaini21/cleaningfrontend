@@ -6,9 +6,10 @@ import 'package:http/http.dart' as http;
 
 import '../models/notification_model.dart';
 import 'auth_service.dart';
+import '../core/api_client.dart';
 
 class NotificationService {
-  final String baseUrl = "http://10.0.2.2:8080";
+  final String baseUrl = ApiClient.baseUrl;
 
   // =========================================
   // REAL-TIME NOTIFICATION STREAM

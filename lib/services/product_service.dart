@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import '../models/category.dart';
 import '../models/product.dart';
 import 'auth_service.dart';
+import '../core/api_client.dart';
 
 class ProductService {
 
@@ -13,8 +14,7 @@ class ProductService {
   // =========================================
 
   // Android Emulator
-  static const String baseUrl =
-      "http://10.0.2.2:8080";
+  static const String baseUrl = ApiClient.baseUrl;
 
   // =========================================
   // COMMON HEADERS

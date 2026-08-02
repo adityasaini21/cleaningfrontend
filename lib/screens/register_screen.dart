@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
 import 'login_screen.dart';
-
+import '../core/api_client.dart';
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
 
@@ -19,7 +19,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _loading = false;
 
   // Android Emulator
-  final String baseUrl = "http://10.0.2.2:8080";
+  final String baseUrl = ApiClient.baseUrl;
 
   Future<void> registerUser() async {
 
