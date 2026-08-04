@@ -211,8 +211,13 @@ class _AdminOrdersScreenState
             );
           }
 
-          final orders =
-          snapshot.data!.reversed.toList();
+          if (!snapshot.hasData) {
+            return const Center(
+              child: Text("No Orders"),
+            );
+          }
+
+          final orders = snapshot.data!.reversed.toList();
 
           // =====================================
           // STATS

@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:ui';
+
 
 import 'package:flutter/material.dart';
 import 'package:salomon_bottom_bar/salomon_bottom_bar.dart';
@@ -27,11 +27,14 @@ class MainNavigationScreen extends StatefulWidget {
 class _MainNavigationScreenState
     extends State<MainNavigationScreen> {
 
+
   int _currentIndex = 0;
 
   bool _isAdmin = false;
 
   int _unreadCount = 0;
+
+
 
   final NotificationService
   _notificationService =
@@ -46,6 +49,9 @@ class _MainNavigationScreenState
     super.initState();
 
     _checkAdmin();
+
+
+
 
     _loadUnreadCount();
 
@@ -211,7 +217,7 @@ class _MainNavigationScreenState
                     color: Colors.red
                         .withOpacity(0.35),
 
-                    blurRadius: 10,
+                    blurRadius: 4,
 
                     offset:
                     const Offset(0, 4),
@@ -250,40 +256,37 @@ class _MainNavigationScreenState
     );
   }
 
+
   @override
   Widget build(BuildContext context) {
 
     final userScreens = [
-
       ProductListScreen(
         onCartTap: () => _changeTab(1),
       ),
-
       const CartScreen(),
-
       const OrderHistoryScreen(),
-
       const NotificationScreen(),
-
       ProfileScreen(
         onOrdersTap: () => _changeTab(2),
       ),
     ];
 
     final adminScreens = [
-
       ProductListScreen(
         onCartTap: () {},
       ),
-
       const AdminOrdersScreen(),
-
       const NotificationScreen(),
-
       ProfileScreen(
         onOrdersTap: () {},
       ),
     ];
+
+
+
+
+
 
     final userItems = [
 
@@ -388,14 +391,9 @@ class _MainNavigationScreenState
 
       extendBody: true,
 
-      body: AnimatedSwitcher(
-
-        duration:
-        const Duration(milliseconds: 350),
-
-        child: _isAdmin
-            ? adminScreens[_currentIndex]
-            : userScreens[_currentIndex],
+      body: IndexedStack(
+        index: _currentIndex,
+        children: _isAdmin ? adminScreens : userScreens,
       ),
 
       // =========================================
@@ -414,21 +412,10 @@ class _MainNavigationScreenState
           ),
 
           child: ClipRRect(
+            borderRadius: BorderRadius.circular(30),
+            child: Container(
 
-            borderRadius:
-            BorderRadius.circular(30),
-
-            child: BackdropFilter(
-
-              filter: ImageFilter.blur(
-
-                sigmaX: 30,
-                sigmaY: 30,
-              ),
-
-              child: Container(
-
-                height: 78,
+                height: 70,
 
                 decoration: BoxDecoration(
 
@@ -463,7 +450,7 @@ class _MainNavigationScreenState
                       color: Colors.black
                           .withOpacity(0.25),
 
-                      blurRadius: 30,
+                      blurRadius: 10,
 
                       offset:
                       const Offset(0, 15),
@@ -474,7 +461,7 @@ class _MainNavigationScreenState
                       color: Colors.blue
                           .withOpacity(0.08),
 
-                      blurRadius: 40,
+                      blurRadius: 12,
                     ),
                   ],
                 ),
@@ -482,12 +469,9 @@ class _MainNavigationScreenState
                 child: Theme(
 
                   data: Theme.of(context).copyWith(
-
-                    splashColor:
-                    Colors.transparent,
-
-                    highlightColor:
-                    Colors.transparent,
+                    splashColor: Colors.transparent,
+                    highlightColor: Colors.transparent,
+                    hoverColor: Colors.transparent,
                   ),
 
                   child: SalomonBottomBar(
@@ -503,19 +487,11 @@ class _MainNavigationScreenState
                       vertical: 10,
                     ),
 
-                    itemPadding:
-                    const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
+                    itemPadding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 8,
                     ),
 
-                    duration:
-                    const Duration(
-                      milliseconds: 300,
-                    ),
-
-                    curve:
-                    Curves.easeInOut,
 
                     items:
                     _isAdmin
@@ -527,7 +503,7 @@ class _MainNavigationScreenState
             ),
           ),
         ),
-      ),
-    );
+      );
+
   }
 }

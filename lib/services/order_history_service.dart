@@ -88,8 +88,13 @@ class OrderHistoryService {
       headers: _headers,
     );
 
+    print(response.statusCode);
+    print(response.body);
+
+
     print("ADMIN STATUS: ${response.statusCode}");
     print("ADMIN BODY: ${response.body}");
+
 
     if (response.statusCode == 200) {
 
