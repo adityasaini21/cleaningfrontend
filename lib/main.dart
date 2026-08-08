@@ -17,6 +17,7 @@ import 'services/cart_provider.dart';
 import 'screens/splash_screen.dart';
 
 import 'theme/app_theme.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 // =========================================
 // BACKGROUND MESSAGE HANDLER
@@ -40,60 +41,39 @@ void main() async {
 
   WidgetsFlutterBinding.ensureInitialized();
 
-  // =========================================
-  // FIREBASE INIT
-  // =========================================
+  // Load .env
+  await dotenv.load(fileName: ".env");
 
+  // Firebase
   await Firebase.initializeApp();
 
-  // =========================================
-  // LOCAL + FOREGROUND NOTIFICATIONS
-  // =========================================
-
+  // Local + Foreground Notifications
   await FirebaseMessagingService.initialize();
   NotificationService.initializeRealtimeListeners();
 
-  // =========================================
-  // BACKGROUND HANDLER
-  // =========================================
-
+  // Background Handler
   FirebaseMessaging.onBackgroundMessage(
     _firebaseMessagingBackgroundHandler,
   );
 
-  // =========================================
-  // LOAD JWT TOKEN
-  // =========================================
-
+  // Load JWT Token
   await AuthService.loadToken();
 
-  print(
-    "APP START TOKEN: ${AuthService.token}",
-  );
+  print("APP START TOKEN: ${AuthService.token}");
 
-  // =========================================
-  // GET FCM TOKEN
-  // =========================================
-
+  // Get FCM Token
   String? fcmToken =
   await FirebaseMessaging.instance.getToken();
 
   print("FCM TOKEN: $fcmToken");
 
-  // =========================================
-  // SAVE TOKEN TO BACKEND
-  // =========================================
-
+  // Save Token To Backend
   if (fcmToken != null &&
       AuthService.token != null) {
 
     await NotificationService()
         .saveFcmToken(fcmToken);
   }
-
-  // =========================================
-  // TOKEN REFRESH
-  // =========================================
 
   FirebaseMessaging.instance.onTokenRefresh
       .listen((newToken) async {
@@ -107,12 +87,7 @@ void main() async {
     }
   });
 
-  // =========================================
-  // FOREGROUND LOGS
-  // =========================================
-
   FirebaseMessaging.onMessage.listen(
-
         (RemoteMessage message) {
 
       print(
@@ -125,12 +100,7 @@ void main() async {
     },
   );
 
-  // =========================================
-  // OPEN APP FROM NOTIFICATION
-  // =========================================
-
   FirebaseMessaging.onMessageOpenedApp.listen(
-
         (RemoteMessage message) {
 
       print(
@@ -140,11 +110,8 @@ void main() async {
   );
 
   runApp(
-
     ChangeNotifierProvider(
-
       create: (_) => CartProvider(),
-
       child: const PremChemicalsApp(),
     ),
   );

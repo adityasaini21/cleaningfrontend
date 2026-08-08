@@ -14,7 +14,7 @@ class ProductService {
   // =========================================
 
   // Android Emulator
-  static const String baseUrl = ApiClient.baseUrl;
+  static String get baseUrl => ApiClient.baseUrl;
 
   // =========================================
   // COMMON HEADERS
