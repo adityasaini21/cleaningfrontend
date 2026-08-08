@@ -12,7 +12,7 @@ class AuthService {
   final String baseUrl = ApiClient.baseUrl;
 
   Future<bool> login(
-      String username,
+      String phoneNumber,
       String password,
       ) async {
     final response = await http.post(
@@ -21,7 +21,7 @@ class AuthService {
         "Content-Type": "application/json",
       },
       body: jsonEncode({
-        "username": username,
+        "phoneNumber": phoneNumber,
         "password": password,
       }),
     );

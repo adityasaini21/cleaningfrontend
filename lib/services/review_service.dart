@@ -10,7 +10,7 @@ import '../core/api_client.dart';
 
 class ReviewService {
 
-  static const String baseUrl =
+  static String get baseUrl =>
       "${ApiClient.baseUrl}/api/reviews";
 
   Future<ReviewSummary> getProductReviews(

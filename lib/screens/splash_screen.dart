@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+
 import '../services/auth_service.dart';
+import 'admin_dashboard_screen.dart';
 import 'login_screen.dart';
-import 'product_list_screen.dart';
 import 'main_navigation_screen.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -12,31 +13,52 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
-
   final AuthService _authService = AuthService();
 
   @override
   void initState() {
     super.initState();
-    _checkLogin();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkLogin();
+    });
   }
 
-  void _checkLogin() async {
-    await AuthService.loadToken();
+  Future<void> _checkLogin() async {
+    await Future.delayed(
+      const Duration(milliseconds: 700),
+    );
 
-    await Future.delayed(const Duration(seconds: 1));
+    if (!mounted) return;
 
-    if (_authService.isLoggedIn) {
+    if (!_authService.isLoggedIn) {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => const MainNavigationScreen()),
+        MaterialPageRoute(
+          builder: (_) => const LoginScreen(),
+        ),
       );
-    } else {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const LoginScreen()),
-      );
+
+      return;
     }
+
+    if (_authService.isAdmin()) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const AdminDashboardScreen(),
+        ),
+      );
+
+      return;
+    }
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const MainNavigationScreen(),
+      ),
+    );
   }
 
   @override

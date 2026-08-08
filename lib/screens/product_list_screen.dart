@@ -124,6 +124,13 @@ class _ProductListScreenState
 
       if (!mounted) return;
 
+      for (final product in products) {
+        precacheImage(
+          CachedNetworkImageProvider(product.imageUrl),
+          context,
+        );
+      }
+
       setState(() {
 
         _products = products;
@@ -647,6 +654,7 @@ class _ProductListScreenState
             )
 
                 : GridView.builder(
+                    cacheExtent: 1200,
 
               padding:
               const EdgeInsets.all(12),
@@ -691,6 +699,8 @@ class _ProductListScreenState
                   },
 
                   child: Card(
+                    elevation: 1,
+                    key: ValueKey(p.id),
 
                     shape:
                     RoundedRectangleBorder(
@@ -722,14 +732,13 @@ class _ProductListScreenState
 
                               child:
                               CachedNetworkImage(
-
-                                imageUrl:
-                                p.imageUrl,
-
-                                width:
-                                double.infinity,
-
+                                imageUrl: p.imageUrl,
+                                width: double.infinity,
                                 fit: BoxFit.cover,
+                                memCacheWidth: 500,
+                                memCacheHeight: 500,
+                                fadeInDuration: Duration.zero,
+                                fadeOutDuration: Duration.zero,
 
                                 errorWidget:
                                     (
