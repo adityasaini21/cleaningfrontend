@@ -71,6 +71,30 @@ class ProductService {
   }
 
   // =========================================
+  // FETCH ALL PRODUCTS (UNPAGED)
+  // =========================================
+  Future<List<Product>> fetchProductsAll() async {
+    try {
+      final response = await http.get(
+        Uri.parse("$baseUrl/api/products"),
+        headers: headers,
+      );
+
+      print("ALL PRODUCTS STATUS: ${response.statusCode}");
+
+      if (response.statusCode == 200) {
+        final List<dynamic> productList = jsonDecode(response.body);
+        return productList.map((e) => Product.fromJson(e)).toList();
+      } else {
+        throw Exception("Failed to load all products");
+      }
+    } catch (e) {
+      print("ALL PRODUCTS ERROR: $e");
+      return [];
+    }
+  }
+
+  // =========================================
   // FETCH DELETED PRODUCTS
   // =========================================
   Future<List<Product>> fetchDeletedProducts() async {

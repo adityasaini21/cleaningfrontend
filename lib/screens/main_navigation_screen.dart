@@ -7,6 +7,7 @@ import 'package:salomon_bottom_bar/salomon_bottom_bar.dart';
 
 import '../services/auth_service.dart';
 import '../services/notification_service.dart';
+import '../services/profile_service.dart';
 
 import 'product_list_screen.dart';
 import 'cart_screen.dart';
@@ -33,6 +34,7 @@ class _MainNavigationScreenState
   bool _isAdmin = false;
 
   int _unreadCount = 0;
+  bool _startProfileInEditMode = false; // Flag to trigger profile edit onboarding
 
 
 
@@ -66,6 +68,11 @@ class _MainNavigationScreenState
 
           _loadUnreadCount();
         });
+
+    // Check first-time setup onboarding status on startup
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkFirstTimeSetup();
+    });
   }
 
   @override
@@ -156,6 +163,7 @@ class _MainNavigationScreenState
     setState(() {
 
       _currentIndex = index;
+      _startProfileInEditMode = false; // Reset edit onboarding flag on manual navigation
     });
 
     final notificationTabIndex =
@@ -164,6 +172,41 @@ class _MainNavigationScreenState
     if (index == notificationTabIndex) {
 
       _loadUnreadCount();
+    }
+  }
+
+  // =========================================
+  // ONBOARDING PROFILE VERIFICATION
+  // =========================================
+  Future<void> _checkFirstTimeSetup() async {
+    // Admins do not require address details
+    if (_isAdmin) return;
+
+    try {
+      final profile = await ProfileService().fetchProfile();
+      if (profile != null) {
+        final isAddressIncomplete = (profile.address == null || profile.address!.trim().isEmpty) ||
+            (profile.city == null || profile.city!.trim().isEmpty) ||
+            (profile.state == null || profile.state!.trim().isEmpty) ||
+            (profile.pincode == null || profile.pincode!.trim().isEmpty);
+
+        if (isAddressIncomplete && mounted) {
+          setState(() {
+            _currentIndex = 4; // Shift tab focus to profile screen
+            _startProfileInEditMode = true; // Auto-activate edit forms
+          });
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("Welcome! Please complete your delivery profile details."),
+              backgroundColor: Color(0xFF0A84FF),
+              duration: Duration(seconds: 4),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint("Profile onboarding check failed: $e");
     }
   }
 
@@ -269,6 +312,8 @@ class _MainNavigationScreenState
       const NotificationScreen(),
       ProfileScreen(
         onOrdersTap: () => _changeTab(2),
+        startInEditMode: _startProfileInEditMode,
+        onProfileSaved: () => _changeTab(0),
       ),
     ];
 
@@ -280,6 +325,7 @@ class _MainNavigationScreenState
       const NotificationScreen(),
       ProfileScreen(
         onOrdersTap: () {},
+        onProfileSaved: () => _changeTab(0),
       ),
     ];
 

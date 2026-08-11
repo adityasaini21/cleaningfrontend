@@ -155,187 +155,223 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
         centerTitle: true,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Center(
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                GestureDetector(
-                  onTap: _handleLogoTap,
-                  child: Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: AppTheme.card,
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: const Color(0xFF2C2C2E),
-                        width: 1.5,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppTheme.primary.withOpacity(0.15),
-                          blurRadius: 20,
-                          spreadRadius: 2,
-                        ),
-                      ],
+      body: Container(
+        color: const Color(0xFF000000), // OLED True Black
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Center(
+            child: SingleChildScrollView(
+              child: TweenAnimationBuilder<double>(
+                tween: Tween(begin: 0.0, end: 1.0),
+                duration: const Duration(milliseconds: 650),
+                curve: Curves.easeOutCubic,
+                builder: (context, value, child) {
+                  return Opacity(
+                    opacity: value,
+                    child: Transform.translate(
+                      offset: Offset(0, (1 - value) * 24),
+                      child: child,
                     ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(40),
+                  );
+                },
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    GestureDetector(
+                      onTap: _handleLogoTap,
                       child: Image.asset(
-                        'assets/images/tt.png',
-                        width: 80,
-                        height: 80,
+                        'assets/images/logoclean.png',
+                        width: 110,
+                        height: 110,
                         fit: BoxFit.contain,
                       ),
                     ),
-                  ),
-                ),
 
-                const SizedBox(height: 24),
+                    const SizedBox(height: 24),
 
-                Text(
-                  _adminLoginMode ? "Admin Login" : "Welcome Back",
-                  style: const TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-
-                const SizedBox(height: 8),
-
-                Text(
-                  _adminLoginMode
-                      ? "Login to access the admin panel"
-                      : "Login to continue",
-                  style: const TextStyle(
-                    fontSize: 16,
-                    color: AppTheme.textSecondary,
-                  ),
-                ),
-
-                const SizedBox(height: 32),
-
-                TextField(
-                  controller: _phoneController,
-                  keyboardType: TextInputType.phone,
-                  maxLength: 10,
-                  decoration: const InputDecoration(
-                    labelText: "Phone Number",
-                    counterText: "",
-                    prefixIcon: Icon(Icons.phone),
-                  ),
-                ),
-
-                const SizedBox(height: 16),
-
-                TextField(
-                  controller: _passwordController,
-                  obscureText: _obscurePassword,
-                  onSubmitted: (_) => _login(),
-                  decoration: InputDecoration(
-                    labelText: "Password",
-                    prefixIcon: const Icon(Icons.lock),
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _obscurePassword
-                            ? Icons.visibility
-                            : Icons.visibility_off,
+                    Text(
+                      _adminLoginMode ? "Admin Login" : "Welcome Back",
+                      style: const TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: -0.5,
                       ),
-                      onPressed: () {
-                        setState(() {
-                          _obscurePassword = !_obscurePassword;
-                        });
-                      },
                     ),
-                  ),
-                ),
 
-                const SizedBox(height: 32),
+                    const SizedBox(height: 8),
 
-                _loading
-                    ? const CircularProgressIndicator()
-                    : Container(
-                        width: double.infinity,
-                        height: 55,
-                        decoration: BoxDecoration(
-                          gradient: AppTheme.primaryGradient,
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppTheme.primary.withOpacity(0.25),
-                              blurRadius: 15,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: ElevatedButton(
-                          onPressed: _login,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.transparent,
-                            shadowColor: Colors.transparent,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          child: Text(
-                            _adminLoginMode ? "Admin Login" : "Login",
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
+                    Text(
+                      _adminLoginMode
+                          ? "Login to access the admin panel"
+                          : "Login to continue",
+                      style: const TextStyle(
+                        fontSize: 16,
+                        color: Color(0xFF8E8E93), // iOS System Gray
+                      ),
+                    ),
+
+                    const SizedBox(height: 36),
+
+                    // iOS Grouped List Form Panel
+                    Container(
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF1C1C1E), // iOS System Gray 6
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: const Color(0xFF2C2C2E),
+                          width: 0.5,
                         ),
                       ),
-
-                if (!_adminLoginMode) ...[
-                  const SizedBox(height: 20),
-
-                  Row(
-                    mainAxisAlignment:
-                    MainAxisAlignment.center,
-                    children: [
-                      const Text(
-                        "Don't have an account?",
-                      ),
-                      TextButton(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) =>
-                              const RegisterScreen(),
+                      child: Column(
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                            child: TextField(
+                              controller: _phoneController,
+                              keyboardType: TextInputType.phone,
+                              maxLength: 10,
+                              style: const TextStyle(fontSize: 16),
+                              decoration: const InputDecoration(
+                                labelText: "Phone Number",
+                                labelStyle: TextStyle(color: Color(0xFF8E8E93)),
+                                prefixIcon: Icon(Icons.phone, color: Color(0xFF8E8E93), size: 22),
+                                border: InputBorder.none,
+                                enabledBorder: InputBorder.none,
+                                focusedBorder: InputBorder.none,
+                                errorBorder: InputBorder.none,
+                                disabledBorder: InputBorder.none,
+                                filled: false,
+                                counterText: "",
+                              ),
                             ),
-                          );
-                        },
-                        child: const Text("Register"),
+                          ),
+
+                          const Divider(
+                            height: 1,
+                            thickness: 0.5,
+                            color: Color(0xFF38383A), // iOS cell divider
+                            indent: 16,
+                            endIndent: 16,
+                          ),
+
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                            child: TextField(
+                              controller: _passwordController,
+                              obscureText: _obscurePassword,
+                              onSubmitted: (_) => _login(),
+                              style: const TextStyle(fontSize: 16),
+                              decoration: InputDecoration(
+                                labelText: "Password",
+                                labelStyle: const TextStyle(color: Color(0xFF8E8E93)),
+                                prefixIcon: const Icon(Icons.lock, color: Color(0xFF8E8E93), size: 22),
+                                border: InputBorder.none,
+                                enabledBorder: InputBorder.none,
+                                focusedBorder: InputBorder.none,
+                                errorBorder: InputBorder.none,
+                                disabledBorder: InputBorder.none,
+                                filled: false,
+                                suffixIcon: IconButton(
+                                  icon: Icon(
+                                    _obscurePassword
+                                        ? Icons.visibility
+                                        : Icons.visibility_off,
+                                    color: const Color(0xFF8E8E93),
+                                    size: 20,
+                                  ),
+                                  onPressed: () {
+                                    setState(() {
+                                      _obscurePassword = !_obscurePassword;
+                                    });
+                                  },
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 36),
+
+                    _loading
+                        ? const CircularProgressIndicator()
+                        : SizedBox(
+                            width: double.infinity,
+                            height: 52,
+                            child: ElevatedButton(
+                              onPressed: _login,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF0A84FF), // iOS System Blue
+                                foregroundColor: Colors.white,
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              child: Text(
+                                _adminLoginMode ? "Admin Login" : "Sign In",
+                                style: const TextStyle(
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ),
+
+                    if (!_adminLoginMode) ...[
+                      const SizedBox(height: 24),
+
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Text(
+                            "Don't have an account?",
+                            style: TextStyle(color: Color(0xFF8E8E93)),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const RegisterScreen(),
+                                ),
+                              );
+                            },
+                            style: TextButton.styleFrom(
+                              foregroundColor: const Color(0xFF0A84FF),
+                            ),
+                            child: const Text("Register"),
+                          ),
+                        ],
                       ),
                     ],
-                  ),
-                ],
 
-                if (_adminLoginMode) ...[
-                  const SizedBox(height: 20),
+                    if (_adminLoginMode) ...[
+                      const SizedBox(height: 24),
 
-                  TextButton(
-                    onPressed: _loading
-                        ? null
-                        : () {
-                      setState(() {
-                        _adminLoginMode = false;
-                        _logoTapCount = 0;
-                        _phoneController.clear();
-                        _passwordController.clear();
-                      });
-                    },
-                    child: const Text(
-                      "Back to Customer Login",
-                    ),
-                  ),
-                ],
-              ],
+                      TextButton(
+                        onPressed: _loading
+                            ? null
+                            : () {
+                                setState(() {
+                                  _adminLoginMode = false;
+                                  _logoTapCount = 0;
+                                  _phoneController.clear();
+                                  _passwordController.clear();
+                                });
+                              },
+                        style: TextButton.styleFrom(
+                          foregroundColor: const Color(0xFF0A84FF),
+                        ),
+                        child: const Text(
+                          "Back to Customer Login",
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
             ),
           ),
         ),

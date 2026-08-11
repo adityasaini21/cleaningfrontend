@@ -11,15 +11,18 @@ import '../services/product_service.dart';
 import '../services/cart_provider.dart';
 import '../services/auth_service.dart';
 
+import 'login_screen.dart';
 import 'product_detail_screen.dart';
 
 class ProductListScreen extends StatefulWidget {
 
   final VoidCallback onCartTap;
+  final bool isOpenedFromAdminDashboard;
 
   const ProductListScreen({
     super.key,
     required this.onCartTap,
+    this.isOpenedFromAdminDashboard = false,
   });
 
   @override
@@ -521,7 +524,19 @@ class _ProductListScreenState
           : null,
 
       appBar: AppBar(
-
+        automaticallyImplyLeading: false,
+        leading: Navigator.canPop(context)
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back_ios_new),
+                onPressed: () {
+                  if (widget.isOpenedFromAdminDashboard) {
+                    Navigator.pop(context);
+                  } else {
+                    _showLogoutConfirmation(context);
+                  }
+                },
+              )
+            : null,
         title: const Text("Products"),
 
         actions: [
@@ -943,6 +958,59 @@ class _ProductListScreenState
         ],
       ),
     );
+  }
+
+  Future<void> _showLogoutConfirmation(BuildContext context) async {
+    final authService = AuthService();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF1C1C1E),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: const BorderSide(color: Color(0xFF2C2C2E), width: 0.5),
+          ),
+          title: const Text(
+            "Logout",
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          ),
+          content: const Text(
+            "Do you really want to logout?",
+            style: TextStyle(color: Color(0xFF8E8E93)),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text(
+                "Cancel",
+                style: TextStyle(color: Color(0xFF0A84FF)),
+              ),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text(
+                "Logout",
+                style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed == true) {
+      await authService.logout();
+      if (!context.mounted) return;
+      Provider.of<CartProvider>(context, listen: false).clearCart();
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const LoginScreen(),
+        ),
+        (route) => false,
+      );
+    }
   }
 }
 

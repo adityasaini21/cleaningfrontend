@@ -6,7 +6,7 @@ class NotificationModel {
 
   final String message;
 
-  final bool isRead;
+  bool isRead;
 
   final String createdAt;
 

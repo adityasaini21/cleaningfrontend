@@ -90,6 +90,30 @@ class AuthService {
     }
   }
 
+  String? getFullNameFromToken() {
+    if (token == null) return null;
+
+    try {
+      final parts = token!.split('.');
+
+      if (parts.length != 3) return null;
+
+      final payload = parts[1];
+
+      final normalized = base64Url.normalize(payload);
+
+      final decodedBytes = base64Url.decode(normalized);
+
+      final decodedString = utf8.decode(decodedBytes);
+
+      final Map<String, dynamic> data = jsonDecode(decodedString);
+
+      return data["fullName"];
+    } catch (e) {
+      return null;
+    }
+  }
+
   String? getRoleFromToken() {
     if (token == null) return null;
 

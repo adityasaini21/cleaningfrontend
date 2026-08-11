@@ -23,6 +23,20 @@ class _AdminOrdersScreenState
 
   late Future<List<OrderModel>> _orders;
 
+  final Map<int, TextEditingController> _deliveryNameControllers = {};
+  final Map<int, TextEditingController> _deliveryPhoneControllers = {};
+
+  @override
+  void dispose() {
+    for (var controller in _deliveryNameControllers.values) {
+      controller.dispose();
+    }
+    for (var controller in _deliveryPhoneControllers.values) {
+      controller.dispose();
+    }
+    super.dispose();
+  }
+
   @override
   void initState() {
 
@@ -218,6 +232,23 @@ class _AdminOrdersScreenState
           }
 
           final orders = snapshot.data!.reversed.toList();
+
+          // Sync controllers with loaded data to prevent text resetting on typing
+          for (var order in orders) {
+            if (!_deliveryNameControllers.containsKey(order.orderId)) {
+              _deliveryNameControllers[order.orderId] = TextEditingController(text: order.deliveryBoyName);
+            } else if (_deliveryNameControllers[order.orderId]!.text != order.deliveryBoyName &&
+                       !FocusScope.of(context).hasFocus) {
+              _deliveryNameControllers[order.orderId]!.text = order.deliveryBoyName ?? "";
+            }
+
+            if (!_deliveryPhoneControllers.containsKey(order.orderId)) {
+              _deliveryPhoneControllers[order.orderId] = TextEditingController(text: order.deliveryBoyPhone);
+            } else if (_deliveryPhoneControllers[order.orderId]!.text != order.deliveryBoyPhone &&
+                       !FocusScope.of(context).hasFocus) {
+              _deliveryPhoneControllers[order.orderId]!.text = order.deliveryBoyPhone ?? "";
+            }
+          }
 
           // =====================================
           // STATS
@@ -538,15 +569,8 @@ class _AdminOrdersScreenState
                 const SizedBox(height: 16),
 
                 ...orders.map((order) {
-                  final deliveryNameController =
-                  TextEditingController(
-                    text: order.deliveryBoyName,
-                  );
-
-                  final deliveryPhoneController =
-                  TextEditingController(
-                    text: order.deliveryBoyPhone,
-                  );
+                  final deliveryNameController = _deliveryNameControllers[order.orderId]!;
+                  final deliveryPhoneController = _deliveryPhoneControllers[order.orderId]!;
 
                   return Card(
 

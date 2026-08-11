@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 
 import '../services/cart_provider.dart';
 import '../services/order_service.dart';
+import '../services/auth_service.dart';
+import '../services/profile_service.dart';
 import 'order_success_screen.dart';
 
 class CheckoutScreen extends StatefulWidget {
@@ -206,6 +208,106 @@ class _CheckoutScreenState
     );
   }
 
+  bool _useProfileDetails = false;
+
+  Widget _buildProfileImportCard() {
+    return _sectionCard(
+      child: Row(
+        children: [
+          const Icon(Icons.account_circle, color: Color(0xFF0A84FF), size: 28),
+          const SizedBox(width: 12),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "Use Profile Details",
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                SizedBox(height: 2),
+                Text(
+                  "Autofill address & contact info",
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Switch.adaptive(
+            value: _useProfileDetails,
+            activeColor: const Color(0xFF0A84FF),
+            onChanged: (val) {
+              setState(() {
+                _useProfileDetails = val;
+                if (_useProfileDetails) {
+                  _importFromProfile();
+                } else {
+                  _clearFields();
+                }
+              });
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _importFromProfile() async {
+    setState(() {
+      _loading = true;
+    });
+
+    try {
+      final profile = await ProfileService().fetchProfile();
+      if (profile != null) {
+        final addressParts = [
+          if (profile.address != null && profile.address!.isNotEmpty) profile.address,
+          if (profile.landmark != null && profile.landmark!.isNotEmpty) "Landmark: ${profile.landmark}",
+          if (profile.city != null && profile.city!.isNotEmpty) profile.city,
+          if (profile.state != null && profile.state!.isNotEmpty) profile.state,
+        ];
+        _addressController.text = addressParts.where((p) => p != null).join(", ");
+        
+        final phone = AuthService().getUsernameFromToken() ?? '';
+        _phoneController.text = phone;
+        
+        if (profile.pincode != null && profile.pincode!.isNotEmpty) {
+          _pincodeController.text = profile.pincode!;
+          await _checkDelivery();
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Failed to load profile details")),
+        );
+        setState(() {
+          _useProfileDetails = false;
+        });
+      }
+    } catch (e) {
+      debugPrint("Error importing profile: $e");
+    } finally {
+      setState(() {
+        _loading = false;
+      });
+    }
+  }
+
+  void _clearFields() {
+    _addressController.clear();
+    _phoneController.clear();
+    _pincodeController.clear();
+    setState(() {
+      _isDeliverable = false;
+      _deliveryMessage = "";
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
 
@@ -238,6 +340,8 @@ class _CheckoutScreenState
           CrossAxisAlignment.start,
 
           children: [
+            _buildProfileImportCard(),
+            const SizedBox(height: 16),
 
             // =====================================
             // ADDRESS

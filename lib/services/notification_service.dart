@@ -112,6 +112,27 @@ class NotificationService {
   }
 
   // =========================================
+  // DELETE NOTIFICATION
+  // =========================================
+
+  Future<bool> deleteNotification(int notificationId) async {
+    final response = await http.delete(
+      Uri.parse(
+        "$baseUrl/api/notifications/$notificationId",
+      ),
+      headers: {
+        "Authorization": "Bearer ${AuthService.token}",
+      },
+    );
+
+    if (response.statusCode == 200) {
+      notifyNotificationReceived();
+      return true;
+    }
+    return false;
+  }
+
+  // =========================================
   // GET UNREAD COUNT
   // =========================================
 

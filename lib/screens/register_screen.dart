@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
 import '../core/api_client.dart';
+import '../theme/app_theme.dart';
 import 'login_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -133,283 +134,369 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      body: SafeArea(
-        child: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.symmetric(
-            horizontal: 24,
-            vertical: 16,
-          ),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 20),
-
-                IconButton(
-                  icon: const Icon(
-                    Icons.arrow_back_ios_new,
-                    size: 20,
-                  ),
-                  onPressed: _loading
-                      ? null
-                      : () => Navigator.pop(context),
-                  style: IconButton.styleFrom(
-                    backgroundColor:
-                    theme.colorScheme.surfaceVariant.withOpacity(0.5),
-                  ),
-                ),
-
-                const SizedBox(height: 24),
-
-                Text(
-                  "Create Account",
-                  style: theme.textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: theme.colorScheme.primary,
-                  ),
-                ),
-
-                const SizedBox(height: 8),
-
-                Text(
-                  "Create your Prem Chemicals customer account",
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: Colors.grey.shade600,
-                  ),
-                ),
-
-                const SizedBox(height: 32),
-
-                _buildSectionHeader(
-                  "Account Details",
-                  Icons.person_outline,
-                ),
-
-                const SizedBox(height: 16),
-
-                // FULL NAME
-                TextFormField(
-                  controller: _fullNameController,
-                  textCapitalization: TextCapitalization.words,
-                  textInputAction: TextInputAction.next,
-                  decoration: const InputDecoration(
-                    labelText: "Full Name",
-                    hintText: "Enter your full name",
-                    prefixIcon: Icon(Icons.person),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.all(
-                        Radius.circular(12),
-                      ),
+      body: Container(
+        color: const Color(0xFF000000), // OLED True Black
+        child: SafeArea(
+          child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 24,
+              vertical: 16,
+            ),
+            child: Form(
+              key: _formKey,
+              child: TweenAnimationBuilder<double>(
+                tween: Tween(begin: 0.0, end: 1.0),
+                duration: const Duration(milliseconds: 650),
+                curve: Curves.easeOutCubic,
+                builder: (context, value, child) {
+                  return Opacity(
+                    opacity: value,
+                    child: Transform.translate(
+                      offset: Offset(0, (1 - value) * 24),
+                      child: child,
                     ),
-                  ),
-                  validator: (value) {
-                    final name = value?.trim() ?? "";
-
-                    if (name.isEmpty) {
-                      return "Please enter your full name";
-                    }
-
-                    if (name.length < 3) {
-                      return "Name must be at least 3 characters";
-                    }
-
-                    if (name.length > 100) {
-                      return "Name is too long";
-                    }
-
-                    return null;
-                  },
-                ),
-
-                const SizedBox(height: 16),
-
-                // PHONE NUMBER
-                TextFormField(
-                  controller: _phoneController,
-                  keyboardType: TextInputType.phone,
-                  textInputAction: TextInputAction.next,
-                  maxLength: 10,
-                  decoration: const InputDecoration(
-                    labelText: "Phone Number",
-                    hintText: "10-digit mobile number",
-                    prefixIcon: Icon(Icons.phone),
-                    counterText: "",
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.all(
-                        Radius.circular(12),
-                      ),
-                    ),
-                  ),
-                  validator: (value) {
-                    final phone = value?.trim() ?? "";
-
-                    if (phone.isEmpty) {
-                      return "Please enter your phone number";
-                    }
-
-                    if (!RegExp(r'^[6-9]\d{9}$').hasMatch(phone)) {
-                      return "Enter a valid 10-digit Indian mobile number";
-                    }
-
-                    return null;
-                  },
-                ),
-
-                const SizedBox(height: 16),
-
-                // NEW PASSWORD
-                TextFormField(
-                  controller: _passwordController,
-                  obscureText: _obscurePassword,
-                  textInputAction: TextInputAction.next,
-                  decoration: InputDecoration(
-                    labelText: "New Password",
-                    hintText: "Minimum 8 characters",
-                    prefixIcon: const Icon(Icons.lock),
-                    border: const OutlineInputBorder(
-                      borderRadius: BorderRadius.all(
-                        Radius.circular(12),
-                      ),
-                    ),
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _obscurePassword
-                            ? Icons.visibility
-                            : Icons.visibility_off,
-                      ),
-                      onPressed: () {
-                        setState(() {
-                          _obscurePassword = !_obscurePassword;
-                        });
-                      },
-                    ),
-                  ),
-                  validator: (value) {
-                    final password = value ?? "";
-
-                    if (password.isEmpty) {
-                      return "Please enter a password";
-                    }
-
-                    if (password.length < 8) {
-                      return "Password must be at least 8 characters";
-                    }
-
-                    return null;
-                  },
-                ),
-
-                const SizedBox(height: 16),
-
-                // CONFIRM PASSWORD
-                TextFormField(
-                  controller: _confirmPasswordController,
-                  obscureText: _obscureConfirmPassword,
-                  textInputAction: TextInputAction.done,
-                  onFieldSubmitted: (_) => registerUser(),
-                  decoration: InputDecoration(
-                    labelText: "Confirm Password",
-                    hintText: "Enter your password again",
-                    prefixIcon: const Icon(Icons.lock_outline),
-                    border: const OutlineInputBorder(
-                      borderRadius: BorderRadius.all(
-                        Radius.circular(12),
-                      ),
-                    ),
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _obscureConfirmPassword
-                            ? Icons.visibility
-                            : Icons.visibility_off,
-                      ),
-                      onPressed: () {
-                        setState(() {
-                          _obscureConfirmPassword =
-                          !_obscureConfirmPassword;
-                        });
-                      },
-                    ),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return "Please confirm your password";
-                    }
-
-                    if (value != _passwordController.text) {
-                      return "Passwords do not match";
-                    }
-
-                    return null;
-                  },
-                ),
-
-                const SizedBox(height: 36),
-
-                // REGISTER BUTTON
-                SizedBox(
-                  width: double.infinity,
-                  height: 55,
-                  child: ElevatedButton(
-                    onPressed: _loading ? null : registerUser,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: theme.colorScheme.primary,
-                      foregroundColor: theme.colorScheme.onPrimary,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      elevation: 2,
-                    ),
-                    child: _loading
-                        ? SizedBox(
-                      height: 24,
-                      width: 24,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2.5,
-                        color: theme.colorScheme.onPrimary,
-                      ),
-                    )
-                        : const Text(
-                      "Create Account",
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 24),
-
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                  );
+                },
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      "Already have an account?",
-                      style: TextStyle(
-                        color: Colors.grey.shade600,
+                    const SizedBox(height: 10),
+
+                    IconButton(
+                      icon: const Icon(
+                        Icons.arrow_back_ios_new,
+                        size: 22,
+                        color: Color(0xFF0A84FF), // iOS system blue
                       ),
-                    ),
-                    TextButton(
                       onPressed: _loading
                           ? null
-                          : () {
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) =>
-                            const LoginScreen(),
+                          : () => Navigator.pop(context),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    Center(
+                      child: Image.asset(
+                        'assets/images/f.png',
+                        width: 100,
+                        height: 100,
+                        fit: BoxFit.contain,
+                      ),
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    Text(
+                      "Create Account",
+                      style: theme.textTheme.headlineMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: -0.5,
+                        color: Colors.white,
+                      ),
+                    ),
+
+                    const SizedBox(height: 8),
+
+                    Text(
+                      "Create your NuKlean customer account",
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: const Color(0xFF8E8E93), // iOS Gray
+                      ),
+                    ),
+
+                    const SizedBox(height: 28),
+
+                    // iOS Grouped List Form Panel
+                    Container(
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF1C1C1E), // iOS System Gray 6
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: const Color(0xFF2C2C2E),
+                          width: 0.5,
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(left: 16, top: 16, right: 16),
+                            child: _buildSectionHeader(
+                              "Account Details",
+                              Icons.person_outline,
+                            ),
                           ),
-                        );
-                      },
-                      child: const Text("Login"),
+
+                          const SizedBox(height: 8),
+
+                          // FULL NAME
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                            child: TextFormField(
+                              controller: _fullNameController,
+                              textCapitalization: TextCapitalization.words,
+                              textInputAction: TextInputAction.next,
+                              style: const TextStyle(fontSize: 16),
+                              decoration: const InputDecoration(
+                                labelText: "Full Name",
+                                labelStyle: TextStyle(color: Color(0xFF8E8E93)),
+                                hintText: "Enter your full name",
+                                prefixIcon: Icon(Icons.person, color: Color(0xFF8E8E93), size: 22),
+                                border: InputBorder.none,
+                                enabledBorder: InputBorder.none,
+                                focusedBorder: InputBorder.none,
+                                errorBorder: InputBorder.none,
+                                disabledBorder: InputBorder.none,
+                                filled: false,
+                              ),
+                              validator: (value) {
+                                final name = value?.trim() ?? "";
+
+                                if (name.isEmpty) {
+                                  return "Please enter your full name";
+                                }
+
+                                if (name.length < 3) {
+                                  return "Name must be at least 3 characters";
+                                }
+
+                                if (name.length > 100) {
+                                  return "Name is too long";
+                                }
+
+                                return null;
+                              },
+                            ),
+                          ),
+
+                          const Divider(
+                            height: 1,
+                            thickness: 0.5,
+                            color: Color(0xFF38383A), // iOS cell divider
+                            indent: 16,
+                            endIndent: 16,
+                          ),
+
+                          // PHONE NUMBER
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                            child: TextFormField(
+                              controller: _phoneController,
+                              keyboardType: TextInputType.phone,
+                              textInputAction: TextInputAction.next,
+                              maxLength: 10,
+                              style: const TextStyle(fontSize: 16),
+                              decoration: const InputDecoration(
+                                labelText: "Phone Number",
+                                labelStyle: TextStyle(color: Color(0xFF8E8E93)),
+                                hintText: "10-digit mobile number",
+                                prefixIcon: Icon(Icons.phone, color: Color(0xFF8E8E93), size: 22),
+                                counterText: "",
+                                border: InputBorder.none,
+                                enabledBorder: InputBorder.none,
+                                focusedBorder: InputBorder.none,
+                                errorBorder: InputBorder.none,
+                                disabledBorder: InputBorder.none,
+                                filled: false,
+                              ),
+                              validator: (value) {
+                                final phone = value?.trim() ?? "";
+
+                                if (phone.isEmpty) {
+                                  return "Please enter your phone number";
+                                }
+
+                                if (!RegExp(r'^[6-9]\d{9}$').hasMatch(phone)) {
+                                  return "Enter a valid 10-digit Indian mobile number";
+                                }
+
+                                return null;
+                              },
+                            ),
+                          ),
+
+                          const Divider(
+                            height: 1,
+                            thickness: 0.5,
+                            color: Color(0xFF38383A), // iOS cell divider
+                            indent: 16,
+                            endIndent: 16,
+                          ),
+
+                          // NEW PASSWORD
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                            child: TextFormField(
+                              controller: _passwordController,
+                              obscureText: _obscurePassword,
+                              textInputAction: TextInputAction.next,
+                              style: const TextStyle(fontSize: 16),
+                              decoration: InputDecoration(
+                                labelText: "New Password",
+                                labelStyle: const TextStyle(color: Color(0xFF8E8E93)),
+                                hintText: "Minimum 8 characters",
+                                prefixIcon: const Icon(Icons.lock, color: Color(0xFF8E8E93), size: 22),
+                                border: InputBorder.none,
+                                enabledBorder: InputBorder.none,
+                                focusedBorder: InputBorder.none,
+                                errorBorder: InputBorder.none,
+                                disabledBorder: InputBorder.none,
+                                filled: false,
+                                suffixIcon: IconButton(
+                                  icon: Icon(
+                                    _obscurePassword
+                                        ? Icons.visibility
+                                        : Icons.visibility_off,
+                                    color: const Color(0xFF8E8E93),
+                                    size: 20,
+                                  ),
+                                  onPressed: () {
+                                    setState(() {
+                                      _obscurePassword = !_obscurePassword;
+                                    });
+                                  },
+                                ),
+                              ),
+                              validator: (value) {
+                                final password = value ?? "";
+
+                                if (password.isEmpty) {
+                                  return "Please enter a password";
+                                }
+
+                                if (password.length < 8) {
+                                  return "Password must be at least 8 characters";
+                                }
+
+                                return null;
+                              },
+                            ),
+                          ),
+
+                          const Divider(
+                            height: 1,
+                            thickness: 0.5,
+                            color: Color(0xFF38383A), // iOS cell divider
+                            indent: 16,
+                            endIndent: 16,
+                          ),
+
+                          // CONFIRM PASSWORD
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                            child: TextFormField(
+                              controller: _confirmPasswordController,
+                              obscureText: _obscureConfirmPassword,
+                              textInputAction: TextInputAction.done,
+                              onFieldSubmitted: (_) => registerUser(),
+                              style: const TextStyle(fontSize: 16),
+                              decoration: InputDecoration(
+                                labelText: "Confirm Password",
+                                labelStyle: const TextStyle(color: Color(0xFF8E8E93)),
+                                hintText: "Enter your password again",
+                                prefixIcon: const Icon(Icons.lock_outline, color: Color(0xFF8E8E93), size: 22),
+                                border: InputBorder.none,
+                                enabledBorder: InputBorder.none,
+                                focusedBorder: InputBorder.none,
+                                errorBorder: InputBorder.none,
+                                disabledBorder: InputBorder.none,
+                                filled: false,
+                                suffixIcon: IconButton(
+                                  icon: Icon(
+                                    _obscureConfirmPassword
+                                        ? Icons.visibility
+                                        : Icons.visibility_off,
+                                    color: const Color(0xFF8E8E93),
+                                    size: 20,
+                                  ),
+                                  onPressed: () {
+                                    setState(() {
+                                      _obscureConfirmPassword =
+                                      !_obscureConfirmPassword;
+                                    });
+                                  },
+                                ),
+                              ),
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return "Please confirm your password";
+                                }
+
+                                if (value != _passwordController.text) {
+                                  return "Passwords do not match";
+                                }
+
+                                return null;
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 36),
+
+                    // REGISTER BUTTON (CAPSULE STYLE MATCHING LOGIN SCREEN)
+                    _loading
+                        ? const Center(child: CircularProgressIndicator())
+                        : SizedBox(
+                            width: double.infinity,
+                            height: 52,
+                            child: ElevatedButton(
+                              onPressed: registerUser,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF0A84FF), // iOS System Blue
+                                foregroundColor: Colors.white,
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              child: const Text(
+                                "Create Account",
+                                style: TextStyle(
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ),
+
+                    const SizedBox(height: 24),
+
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Text(
+                          "Already have an account?",
+                          style: TextStyle(
+                            color: Color(0xFF8E8E93),
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: _loading
+                              ? null
+                              : () {
+                                  Navigator.pushReplacement(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => const LoginScreen(),
+                                    ),
+                                  );
+                                },
+                          style: TextButton.styleFrom(
+                            foregroundColor: const Color(0xFF0A84FF),
+                          ),
+                          child: const Text("Login"),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-
-                const SizedBox(height: 20),
-              ],
+              ),
             ),
           ),
         ),
