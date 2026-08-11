@@ -31,7 +31,7 @@ class ProductService {
 
     try {
 
-      final response = await http.get(
+      final response = await ApiClient.get(
 
         Uri.parse(
           "$baseUrl/api/products/paged?page=$page&size=50",
@@ -75,7 +75,7 @@ class ProductService {
   // =========================================
   Future<List<Product>> fetchProductsAll() async {
     try {
-      final response = await http.get(
+      final response = await ApiClient.get(
         Uri.parse("$baseUrl/api/products"),
         headers: headers,
       );
@@ -101,7 +101,7 @@ class ProductService {
 
     try {
 
-      final response = await http.get(
+      final response = await ApiClient.get(
 
         Uri.parse(
           "$baseUrl/api/products/deleted",
@@ -142,7 +142,7 @@ class ProductService {
   // =========================================
   Future<void> restoreProduct(int productId) async {
 
-    final response = await http.put(
+    final response = await ApiClient.put(
 
       Uri.parse(
         "$baseUrl/api/products/$productId/restore",
@@ -170,7 +170,7 @@ class ProductService {
 
     try {
 
-      final response = await http.get(
+      final response = await ApiClient.get(
 
         Uri.parse(
           "$baseUrl/api/products?category=${Uri.encodeComponent(categoryName)}",
@@ -213,7 +213,7 @@ class ProductService {
 
     try {
 
-      final response = await http.get(
+      final response = await ApiClient.get(
 
         Uri.parse(
           "$baseUrl/api/categories",
@@ -276,7 +276,7 @@ class ProductService {
 
     print("CREATE BODY: ${jsonEncode(body)}");
 
-    final response = await http.post(
+    final response = await ApiClient.post(
 
       Uri.parse(
         "$baseUrl/api/products",
@@ -304,7 +304,7 @@ class ProductService {
   // =========================================
   Future<void> deleteProduct(int productId) async {
 
-    final response = await http.delete(
+    final response = await ApiClient.delete(
 
       Uri.parse(
         "$baseUrl/api/products/$productId",
@@ -353,7 +353,7 @@ class ProductService {
 
     print("UPDATE BODY: ${jsonEncode(body)}");
 
-    final response = await http.put(
+    final response = await ApiClient.put(
 
       Uri.parse(
         "$baseUrl/api/products/$productId",

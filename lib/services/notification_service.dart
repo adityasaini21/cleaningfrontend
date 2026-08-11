@@ -67,7 +67,7 @@ class NotificationService {
 
   Future<List<NotificationModel>>
   getMyNotifications() async {
-    final response = await http.get(
+    final response = await ApiClient.get(
       Uri.parse(
         "$baseUrl/api/notifications",
       ),
@@ -98,7 +98,7 @@ class NotificationService {
 
   Future<void> markAsRead(
       int notificationId) async {
-    await http.put(
+    await ApiClient.put(
       Uri.parse(
         "$baseUrl/api/notifications/$notificationId/read",
       ),
@@ -116,7 +116,7 @@ class NotificationService {
   // =========================================
 
   Future<bool> deleteNotification(int notificationId) async {
-    final response = await http.delete(
+    final response = await ApiClient.delete(
       Uri.parse(
         "$baseUrl/api/notifications/$notificationId",
       ),
@@ -137,7 +137,7 @@ class NotificationService {
   // =========================================
 
   Future<int> getUnreadCount() async {
-    final response = await http.get(
+    final response = await ApiClient.get(
       Uri.parse(
         "$baseUrl/api/notifications/unread-count",
       ),
@@ -163,7 +163,7 @@ class NotificationService {
 
   Future<void> saveFcmToken(
       String fcmToken) async {
-    final response = await http.post(
+    final response = await ApiClient.post(
       Uri.parse(
         "$baseUrl/auth/save-fcm-token",
       ),

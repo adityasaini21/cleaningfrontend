@@ -15,7 +15,7 @@ class AdminUserService {
   };
 
   Future<List<AdminUser>> searchUsers(String query) async {
-    final response = await http.get(
+    final response = await ApiClient.get(
       Uri.parse(
         "$baseUrl/admin/users/search?query=${Uri.encodeQueryComponent(query)}",
       ),
@@ -49,7 +49,7 @@ class AdminUserService {
       int userId,
       String newPassword,
       ) async {
-    final response = await http.put(
+    final response = await ApiClient.put(
       Uri.parse(
         "$baseUrl/admin/users/$userId/reset-password",
       ),
@@ -69,5 +69,29 @@ class AdminUserService {
             : "Failed to reset password",
       );
     }
+  }
+
+  Future<AdminUser> toggleUserStatus(int userId) async {
+    final response = await ApiClient.put(
+      Uri.parse(
+        "$baseUrl/admin/users/$userId/toggle-status",
+      ),
+      headers: headers,
+    );
+
+    print("TOGGLE USER STATUS: ${response.statusCode}");
+    print("TOGGLE USER BODY: ${response.body}");
+
+    if (response.statusCode == 200) {
+      return AdminUser.fromJson(
+        jsonDecode(response.body) as Map<String, dynamic>,
+      );
+    }
+
+    throw Exception(
+      response.body.isNotEmpty
+          ? response.body
+          : "Failed to toggle user status",
+    );
   }
 }

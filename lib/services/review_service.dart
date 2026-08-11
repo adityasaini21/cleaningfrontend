@@ -16,7 +16,7 @@ class ReviewService {
   Future<ReviewSummary> getProductReviews(
       int productId) async {
 
-    final response = await http.get(
+    final response = await ApiClient.get(
       Uri.parse(
         "$baseUrl/product/$productId",
       ),
@@ -65,7 +65,7 @@ class ReviewService {
     debugPrint("RATING: $rating");
     debugPrint("COMMENT: $comment");
 
-    final response = await http.post(
+    final response = await ApiClient.post(
 
       Uri.parse(baseUrl),
 
@@ -104,7 +104,7 @@ class ReviewService {
 
     final token = AuthService.token;
 
-    final response = await http.get(
+    final response = await ApiClient.get(
 
       Uri.parse(
         "$baseUrl/can-review/$productId",
@@ -133,7 +133,7 @@ class ReviewService {
 
     final token = AuthService.token;
 
-    final response = await http.post(
+    final response = await ApiClient.post(
 
       Uri.parse(
         "$baseUrl/$reviewId/helpful",

@@ -2,7 +2,7 @@ const Map<String, List<String>> indiaStatesAndCities = {
   "Andaman and Nicobar Islands": [
     "Port Blair"
   ],
-  "Andhra Pradesh": [f
+  "Andhra Pradesh": [
     "Adoni",
     "Amaravati",
     "Anantapur",

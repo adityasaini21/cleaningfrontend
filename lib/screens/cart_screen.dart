@@ -468,18 +468,26 @@ class CartScreen extends StatelessWidget {
                     ),
                   ),
 
-                  Text(
-
-                    "FREE",
-
-                    style: TextStyle(
-
-                      color: Colors.green.shade400,
-
-                      fontSize: 15,
-
-                      fontWeight: FontWeight.bold,
-                    ),
+                  Row(
+                    children: [
+                      Text(
+                        "₹30.00",
+                        style: TextStyle(
+                          color: Colors.grey.shade400,
+                          fontSize: 14,
+                          decoration: TextDecoration.lineThrough,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        "FREE",
+                        style: TextStyle(
+                          color: Colors.green.shade400,
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),

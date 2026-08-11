@@ -29,7 +29,7 @@ class OrderHistoryService {
   // =========================================
   Future<List<OrderModel>> fetchMyOrders() async {
 
-    final response = await http.get(
+    final response = await ApiClient.get(
 
       Uri.parse("$baseUrl/api/orders/my"),
 
@@ -61,7 +61,7 @@ class OrderHistoryService {
   // =========================================
   Future<void> cancelOrder(int orderId) async {
 
-    final response = await http.put(
+    final response = await ApiClient.put(
 
       Uri.parse(
         "$baseUrl/api/orders/$orderId/cancel",
@@ -81,7 +81,7 @@ class OrderHistoryService {
   // =========================================
   Future<List<OrderModel>> fetchAllOrders() async {
 
-    final response = await http.get(
+    final response = await ApiClient.get(
 
       Uri.parse("$baseUrl/api/orders/all"),
 
@@ -124,7 +124,7 @@ class OrderHistoryService {
 
   }) async {
 
-    final response = await http.put(
+    final response = await ApiClient.put(
 
       Uri.parse(
         "$baseUrl/api/orders/$orderId/status?status=$status",
@@ -162,7 +162,7 @@ class OrderHistoryService {
 
   }) async {
 
-    final response = await http.put(
+    final response = await ApiClient.put(
 
       Uri.parse(
         "$baseUrl/api/orders/$orderId/assign-delivery",

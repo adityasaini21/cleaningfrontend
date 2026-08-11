@@ -51,7 +51,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     });
 
     try {
-      final response = await http.post(
+      final response = await ApiClient.post(
         Uri.parse("$baseUrl/auth/register"),
         headers: {
           "Content-Type": "application/json",

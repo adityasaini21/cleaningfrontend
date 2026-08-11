@@ -18,7 +18,7 @@ class OrderService {
 
     try {
 
-      final response = await http.get(
+      final response = await ApiClient.get(
 
         Uri.parse(
           "$baseUrl/api/pincode/check/$pincode",
@@ -91,7 +91,7 @@ class OrderService {
 
     print("===================================");
 
-    final response = await http.post(
+    final response = await ApiClient.post(
 
       Uri.parse("$baseUrl/api/orders"),
 
@@ -156,7 +156,7 @@ class OrderService {
   Future<String?> createRazorpayOrder(
       int orderId) async {
 
-    final response = await http.post(
+    final response = await ApiClient.post(
 
       Uri.parse(
         "$baseUrl/api/orders/$orderId/pay",
@@ -197,7 +197,7 @@ class OrderService {
 
   }) async {
 
-    final response = await http.post(
+    final response = await ApiClient.post(
 
       Uri.parse(
         "$baseUrl/api/payments/verify/$orderId",

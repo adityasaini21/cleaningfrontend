@@ -305,6 +305,41 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
     confirmPasswordController.dispose();
   }
 
+  Future<void> _toggleUserStatus(AdminUser user) async {
+    try {
+      final updatedUser = await _service.toggleUserStatus(user.id);
+      if (!mounted) return;
+
+      setState(() {
+        final index = _users.indexWhere((u) => u.id == user.id);
+        if (index != -1) {
+          _users[index] = updatedUser;
+        }
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            updatedUser.active
+                ? "Activated customer ${user.fullName}"
+                : "Deactivated customer ${user.fullName}",
+          ),
+          backgroundColor: updatedUser.active ? Colors.green : Colors.orange,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            e.toString().replaceFirst("Exception: ", ""),
+          ),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -476,13 +511,23 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                 ],
               ),
 
-              trailing: IconButton(
-                tooltip: "Reset Password",
-                icon: const Icon(
-                  Icons.lock_reset,
-                ),
-                onPressed: () =>
-                    _showResetPasswordDialog(user),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    tooltip: "Reset Password",
+                    icon: const Icon(
+                      Icons.lock_reset,
+                    ),
+                    onPressed: () =>
+                        _showResetPasswordDialog(user),
+                  ),
+                  Switch(
+                    value: user.active,
+                    activeColor: Colors.green,
+                    onChanged: (val) => _toggleUserStatus(user),
+                  ),
+                ],
               ),
             ),
           );

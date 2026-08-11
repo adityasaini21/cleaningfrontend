@@ -48,8 +48,8 @@ class _AdminDashboardScreenState
       _fetchDashboardBadges();
     });
 
-    // Periodic reload every 5 seconds to guarantee instant local testing updates
-    _refreshTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+    // Periodic reload every 60 seconds to check for updates (cost optimized for Railway)
+    _refreshTimer = Timer.periodic(const Duration(seconds: 60), (_) {
       _fetchDashboardBadges();
     });
   }

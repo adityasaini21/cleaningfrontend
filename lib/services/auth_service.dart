@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -9,13 +10,23 @@ import '../core/api_client.dart';
 class AuthService {
   static String? token;
 
+  static final StreamController<void> _unauthorizedController =
+      StreamController<void>.broadcast();
+
+  static Stream<void> get unauthorizedStream =>
+      _unauthorizedController.stream;
+
+  static void triggerUnauthorized() {
+    _unauthorizedController.add(null);
+  }
+
   final String baseUrl = ApiClient.baseUrl;
 
   Future<bool> login(
       String phoneNumber,
       String password,
       ) async {
-    final response = await http.post(
+    final response = await ApiClient.post(
       Uri.parse("$baseUrl/auth/login"),
       headers: {
         "Content-Type": "application/json",
@@ -160,7 +171,7 @@ class AuthService {
 
       print("FCM TOKEN: $fcmToken");
 
-      final response = await http.post(
+      final response = await ApiClient.post(
         Uri.parse("${ApiClient.baseUrl}/auth/save-fcm-token"),
         headers: {
           "Content-Type": "application/json",

@@ -14,7 +14,7 @@ class ProfileService {
 
   Future<UserProfile?> fetchProfile() async {
     try {
-      final response = await http.get(
+      final response = await ApiClient.get(
         Uri.parse("$baseUrl/auth/profile"),
         headers: _headers,
       );
@@ -30,7 +30,7 @@ class ProfileService {
 
   Future<bool> updateProfile(UserProfile profile) async {
     try {
-      final response = await http.put(
+      final response = await ApiClient.put(
         Uri.parse("$baseUrl/auth/profile"),
         headers: _headers,
         body: jsonEncode(profile.toJson()),
@@ -45,7 +45,7 @@ class ProfileService {
 
   Future<String?> changePassword(String oldPassword, String newPassword) async {
     try {
-      final response = await http.put(
+      final response = await ApiClient.put(
         Uri.parse("$baseUrl/auth/change-password"),
         headers: _headers,
         body: jsonEncode({

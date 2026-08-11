@@ -15,6 +15,7 @@ import 'order_history_screen.dart';
 import 'profile_screen.dart';
 import 'admin_orders_screen.dart';
 import 'notification_screen.dart';
+import 'login_screen.dart';
 
 class MainNavigationScreen extends StatefulWidget {
 
@@ -24,6 +25,8 @@ class MainNavigationScreen extends StatefulWidget {
   State<MainNavigationScreen> createState() =>
       _MainNavigationScreenState();
 }
+
+class _AdminNavigationScreenState {} // Keep compiler happy if any reference exists
 
 class _MainNavigationScreenState
     extends State<MainNavigationScreen> {
@@ -44,6 +47,12 @@ class _MainNavigationScreenState
 
   StreamSubscription?
   _notificationSubscription;
+
+  StreamSubscription?
+  _unauthorizedSubscription;
+
+  Timer?
+  _sessionCheckTimer;
 
   @override
   void initState() {
@@ -69,16 +78,58 @@ class _MainNavigationScreenState
           _loadUnreadCount();
         });
 
+    _unauthorizedSubscription =
+        AuthService
+            .unauthorizedStream
+            .listen((_) {
+          _handleUnauthorized();
+        });
+
+    // Periodically verify session by polling an authenticated endpoint (60s interval for cost optimization)
+    _sessionCheckTimer = Timer.periodic(
+      const Duration(seconds: 60),
+      (timer) {
+        if (AuthService.token != null) {
+          _loadUnreadCount();
+        }
+      },
+    );
+
     // Check first-time setup onboarding status on startup
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkFirstTimeSetup();
     });
   }
 
+  void _handleUnauthorized() {
+    if (!mounted) return;
+
+    AuthService().logout();
+
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(
+        builder: (_) => const LoginScreen(),
+      ),
+      (route) => false,
+    );
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          "Your account has been deactivated. Logged out.",
+        ),
+        backgroundColor: Colors.redAccent,
+        duration: Duration(seconds: 4),
+      ),
+    );
+  }
+
   @override
   void dispose() {
 
     _notificationSubscription?.cancel();
+    _unauthorizedSubscription?.cancel();
+    _sessionCheckTimer?.cancel();
 
     super.dispose();
   }

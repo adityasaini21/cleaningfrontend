@@ -727,23 +727,34 @@ class _CheckoutScreenState
 
                   const SizedBox(height: 10),
 
-                  const Row(
+                  Row(
 
                     mainAxisAlignment:
                     MainAxisAlignment.spaceBetween,
 
                     children: [
 
-                      Text("Delivery"),
+                      const Text("Delivery"),
 
-                      Text(
-
-                        "FREE",
-
-                        style: TextStyle(
-                          color:
-                          Colors.green,
-                        ),
+                      Row(
+                        children: [
+                          Text(
+                            "₹30.00",
+                            style: TextStyle(
+                              color: Colors.grey.shade400,
+                              fontSize: 14,
+                              decoration: TextDecoration.lineThrough,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          const Text(
+                            "FREE",
+                            style: TextStyle(
+                              color: Colors.green,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
