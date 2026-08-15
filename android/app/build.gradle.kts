@@ -12,7 +12,7 @@ plugins {
 
 android {
 
-    namespace = "com.example.prem_chemicals_app"
+    namespace = "com.premchemicals.nuklean"
 
     compileSdk = flutter.compileSdkVersion
 
@@ -39,7 +39,7 @@ android {
     defaultConfig {
 
         applicationId =
-            "com.example.prem_chemicals_app"
+            "com.premchemicals.nuklean"
 
         minSdk = flutter.minSdkVersion
 

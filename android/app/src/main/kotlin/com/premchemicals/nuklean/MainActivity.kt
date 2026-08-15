@@ -1,4 +1,4 @@
-package com.example.prem_chemicals_app
+package com.premchemicals.nuklean
 
 import io.flutter.embedding.android.FlutterActivity
 
