@@ -764,7 +764,7 @@ class _ProductListScreenState
     ];
     
     return Container(
-      height: 98,
+      height: 76,
       margin: const EdgeInsets.symmetric(vertical: 8),
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
@@ -804,11 +804,11 @@ class _ProductListScreenState
               child: Column(
                 children: [
                   Container(
-                    width: 56,
-                    height: 56,
+                    width: 44,
+                    height: 44,
                     decoration: BoxDecoration(
                       color: const Color(0xFF1C1C1E),
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(12),
                       border: Border.all(
                         color: isSelected ? const Color(0xFF30D158) : const Color(0xFF2C2C2E),
                         width: isSelected ? 1.5 : 0.5,
@@ -817,17 +817,17 @@ class _ProductListScreenState
                     child: Icon(
                       iconData,
                       color: isSelected ? const Color(0xFF30D158) : Colors.white,
-                      size: 24,
+                      size: 20,
                     ),
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 4),
                   Text(
                     cat.name.replaceAll(' ', '\n'),
                     textAlign: TextAlign.center,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      fontSize: 10,
+                      fontSize: 9,
                       fontWeight: FontWeight.w600,
                       color: isSelected ? const Color(0xFF30D158) : const Color(0xFF8E8E93),
                       height: 1.1,
@@ -859,6 +859,7 @@ class _ProductListScreenState
           : null,
       appBar: AppBar(
         automaticallyImplyLeading: false,
+        centerTitle: true,
         leading: Navigator.canPop(context)
             ? IconButton(
                 icon: const Icon(Icons.arrow_back_ios_new, size: 20),
@@ -871,27 +872,14 @@ class _ProductListScreenState
                 },
               )
             : null,
-        title: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Image.asset(
-              'assets/images/nuklean_logo_icon.png',
-              height: 24,
-              fit: BoxFit.contain,
-              errorBuilder: (context, error, stackTrace) => const Icon(Icons.science, color: Colors.blue),
-            ),
-            const SizedBox(width: 8),
-            Image.asset(
-              'assets/images/nuklean_logo_wordmark.png',
-              height: 20,
-              fit: BoxFit.contain,
-              errorBuilder: (context, error, stackTrace) => const Text(
-                "NuKlean",
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-              ),
-            ),
-          ],
+        title: Image.asset(
+          'assets/images/lll.png',
+          height: 16,
+          fit: BoxFit.contain,
+          errorBuilder: (context, error, stackTrace) => const Text(
+            "NuKlean",
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          ),
         ),
         actions: [
           Stack(
@@ -1021,7 +1009,7 @@ class _ProductListScreenState
                           crossAxisCount: 2,
                           mainAxisSpacing: 16,
                           crossAxisSpacing: 16,
-                          childAspectRatio: _isAdmin ? 0.50 : 0.61,
+                          childAspectRatio: _isAdmin ? 0.44 : 0.52,
                         ),
                         itemCount: _products.length,
                         itemBuilder: (context, index) {

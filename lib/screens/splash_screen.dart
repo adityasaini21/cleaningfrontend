@@ -134,7 +134,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
   void didChangeDependencies() {
     super.didChangeDependencies();
     // Pre-cache logo image before build passes to prevent blank frames on start
-    precacheImage(const AssetImage('assets/images/logoclean.png'), context);
+    precacheImage(const AssetImage('assets/images/llo.png'), context);
   }
 
   @override
@@ -240,48 +240,13 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                   child: Transform.scale(
                     scale: currentScale,
                     child: RepaintBoundary(
-                      child: progress < 0.66
-                          ? Stack(
-                              alignment: Alignment.center,
-                              children: [
-                                // Parallax Background Layer (simulates depth underneath white frame)
-                                Transform.translate(
-                                  offset: Offset(currentShift, currentShift),
-                                  child: ShaderMask(
-                                    shaderCallback: (bounds) => const LinearGradient(
-                                      colors: [Color(0xFF0A84FF), Color(0xFF00E676)],
-                                    ).createShader(bounds),
-                                    blendMode: BlendMode.srcIn,
-                                    child: Image.asset(
-                                      'assets/images/logoclean.png',
-                                      width: 155,
-                                      height: 155,
-                                      fit: BoxFit.contain,
-                                      filterQuality: FilterQuality.low, // Performance optimization
-                                    ),
-                                  ),
-                                ),
-
-                                // Main Foreground Layer
-                                Transform.translate(
-                                  offset: Offset(-currentShift, -currentShift),
-                                  child: Image.asset(
-                                    'assets/images/logoclean.png',
-                                    width: 155,
-                                    height: 155,
-                                    fit: BoxFit.contain,
-                                    filterQuality: FilterQuality.low, // Performance optimization
-                                  ),
-                                ),
-                              ],
-                            )
-                          : Image.asset(
-                              'assets/images/logoclean.png',
-                              width: 155,
-                              height: 155,
-                              fit: BoxFit.contain,
-                              filterQuality: FilterQuality.low, // Performance optimization
-                            ),
+                      child: Image.asset(
+                        'assets/images/llo.png',
+                        width: 70,
+                        height: 50,
+                        fit: BoxFit.contain,
+                        filterQuality: FilterQuality.low, // Performance optimization
+                      ),
                     ),
                   ),
                 );
