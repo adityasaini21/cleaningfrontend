@@ -346,7 +346,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
 
             return LinearProgressIndicator(
               value: value,
-              minHeight: 6,
+              minHeight: 4,
               backgroundColor:
               Colors.grey.shade300,
               color: Colors.green,
@@ -354,7 +354,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
           },
         ),
 
-        const SizedBox(height: 10),
+        const SizedBox(height: 8),
 
         Row(
           mainAxisAlignment:
@@ -397,7 +397,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
       duration:
       const Duration(milliseconds: 300),
 
-      padding: const EdgeInsets.all(6),
+      padding: const EdgeInsets.all(4),
 
       decoration: BoxDecoration(
         color: active
@@ -409,7 +409,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
 
       child: Icon(
         icon,
-        size: 16,
+        size: 12,
         color:
         active
             ? Colors.white
@@ -515,33 +515,38 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
           bool isCompleted =
               index <= currentIndex;
 
-          return Row(
-            children: [
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 2.0),
+            child: Row(
+              children: [
 
-              Icon(
-                Icons.radio_button_checked,
+                Icon(
+                  Icons.radio_button_checked,
 
-                color:
-                isCompleted
-                    ? Colors.green
-                    : Colors.grey,
-
-                size: 18,
-              ),
-
-              const SizedBox(width: 10),
-
-              Text(
-                steps[index]["title"],
-
-                style: TextStyle(
-                  fontWeight:
+                  color:
                   isCompleted
-                      ? FontWeight.bold
-                      : FontWeight.normal,
+                      ? Colors.green
+                      : Colors.grey,
+
+                  size: 12,
                 ),
-              ),
-            ],
+
+                const SizedBox(width: 8),
+
+                Text(
+                  steps[index]["title"],
+
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: isCompleted ? Colors.white : Colors.white70,
+                    fontWeight:
+                    isCompleted
+                        ? FontWeight.bold
+                        : FontWeight.normal,
+                  ),
+                ),
+              ],
+            ),
           );
         },
       ),
@@ -626,16 +631,22 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
               final deliveryRemaining =
               _remainingDeliveryTime(order);
 
-              return Card(
-
-                margin:
-                const EdgeInsets.all(12),
-
-                child: ExpansionTile(
-
-                  title: Text(
-                    "Order #${order.orderId}",
-                  ),
+              return Container(
+                margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1C1C1E),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFF2C2C2E), width: 0.5),
+                ),
+                child: Theme(
+                  data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+                  child: ExpansionTile(
+                    tilePadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                    childrenPadding: const EdgeInsets.only(bottom: 6),
+                    title: Text(
+                      "Order #${order.orderId}",
+                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white),
+                    ),
 
                   subtitle: Column(
 
@@ -646,12 +657,14 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
 
                       Text(
                         "${_formatDate(order.createdAt)} • ${_formatTime(order.createdAt)}",
+                        style: const TextStyle(fontSize: 11, color: Colors.grey),
                       ),
 
-                      const SizedBox(height: 6),
+                      const SizedBox(height: 2),
 
                       Text(
                         "Total: ₹${order.totalAmount}",
+                        style: const TextStyle(fontSize: 11, color: Colors.white70),
                       ),
 
                       if (_showETA(order))
@@ -661,6 +674,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
 
                           style: const TextStyle(
                             color: Colors.blue,
+                            fontSize: 11,
                             fontWeight:
                             FontWeight.bold,
                           ),
@@ -672,6 +686,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
 
                           style: const TextStyle(
                             color: Colors.red,
+                            fontSize: 11,
                             fontWeight:
                             FontWeight.bold,
                           ),
@@ -683,7 +698,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
 
                     Padding(
                       padding:
-                      const EdgeInsets.all(16),
+                      const EdgeInsets.fromLTRB(12, 10, 12, 8),
 
                       child: _buildProgressBar(
                         order.orderStatus,
@@ -692,21 +707,23 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
 
                     const Padding(
                       padding:
-                      EdgeInsets.all(10),
+                      EdgeInsets.symmetric(horizontal: 12, vertical: 4),
 
                       child: Text(
                         "Order Tracking",
 
                         style: TextStyle(
+                          fontSize: 12,
                           fontWeight:
                           FontWeight.bold,
+                          color: Colors.grey,
                         ),
                       ),
                     ),
 
                     Padding(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
+                        horizontal: 12,
                       ),
                       child: _buildTrackingTimeline(
                         order.orderStatus,
@@ -715,22 +732,22 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
 
                     if (order.deliveryBoyName.isNotEmpty) ...[
 
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 10),
 
                       Container(
 
                         margin: const EdgeInsets.symmetric(
-                          horizontal: 16,
+                          horizontal: 12,
                         ),
 
-                        padding: const EdgeInsets.all(16),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
 
                         decoration: BoxDecoration(
 
                           color: Colors.green.withOpacity(0.08),
 
                           borderRadius:
-                          BorderRadius.circular(12),
+                          BorderRadius.circular(8),
 
                           border: Border.all(
                             color: Colors.green.withOpacity(0.3),
@@ -751,9 +768,10 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                                 Icon(
                                   Icons.delivery_dining,
                                   color: Colors.green,
+                                  size: 18,
                                 ),
 
-                                SizedBox(width: 8),
+                                SizedBox(width: 6),
 
                                 Text(
 
@@ -761,19 +779,20 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
 
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
-                                    fontSize: 16,
+                                    fontSize: 13,
                                   ),
                                 ),
                               ],
                             ),
 
-                            SizedBox(height: 12),
+                            const SizedBox(height: 6),
 
                             Text(
                               "Name: ${order.deliveryBoyName}",
+                              style: const TextStyle(fontSize: 12),
                             ),
 
-                            SizedBox(height: 8),
+                            const SizedBox(height: 4),
 
                             Row(
 
@@ -783,21 +802,30 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
 
                                   child: Text(
                                     "Phone: ${order.deliveryBoyPhone}",
+                                    style: const TextStyle(fontSize: 12),
                                   ),
                                 ),
 
-                                ElevatedButton.icon(
+                                SizedBox(
+                                  height: 28,
+                                  child: ElevatedButton.icon(
 
-                                  onPressed: () {
+                                    onPressed: () {
 
-                                    _callDeliveryBoy(
-                                      order.deliveryBoyPhone,
-                                    );
-                                  },
+                                      _callDeliveryBoy(
+                                        order.deliveryBoyPhone,
+                                      );
+                                    },
 
-                                  icon: const Icon(Icons.call),
+                                    style: ElevatedButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                                      textStyle: const TextStyle(fontSize: 11),
+                                    ),
 
-                                  label: const Text("Call"),
+                                    icon: const Icon(Icons.call, size: 12),
+
+                                    label: const Text("Call"),
+                                  ),
                                 ),
                               ],
                             ),
@@ -811,12 +839,15 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                     ...order.items.map((item) {
 
                       return ListTile(
+                        dense: true,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
 
                         title:
-                        Text(item.productName),
+                        Text(item.productName, style: const TextStyle(fontSize: 13)),
 
                         subtitle: Text(
                           "₹${item.price} x ${item.quantity}",
+                          style: const TextStyle(fontSize: 11),
                         ),
                       );
                     }),
@@ -824,10 +855,11 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                     // 🔥 REORDER
                     Padding(
                       padding:
-                      const EdgeInsets.all(12),
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
 
                       child: SizedBox(
                         width: double.infinity,
+                        height: 34,
 
                         child:
                         ElevatedButton.icon(
@@ -836,12 +868,21 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                             _reorder(order);
                           },
 
+                          style: ElevatedButton.styleFrom(
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+
                           icon: const Icon(
                             Icons.refresh,
+                            size: 16,
                           ),
 
                           label: const Text(
                             "Reorder",
+                            style: TextStyle(fontSize: 13),
                           ),
                         ),
                       ),
@@ -851,39 +892,53 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                     if (_canCancel(order))
                       Padding(
                         padding:
-                        const EdgeInsets.all(12),
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
 
-                        child: ElevatedButton(
+                        child: SizedBox(
+                          width: double.infinity,
+                          height: 34,
+                          child: ElevatedButton(
 
-                          style:
-                          ElevatedButton.styleFrom(
-                            backgroundColor:
-                            Colors.red,
-                          ),
+                            style:
+                            ElevatedButton.styleFrom(
+                              backgroundColor:
+                              Colors.red,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
 
-                          onPressed:
-                          _isCancelling
-                              ? null
-                              : () {
-                            _cancelOrder(
-                              order.orderId,
-                            );
-                          },
+                            onPressed:
+                            _isCancelling
+                                ? null
+                                : () {
+                              _cancelOrder(
+                                order.orderId,
+                              );
+                            },
 
-                          child:
-                          _isCancelling
-                              ? const CircularProgressIndicator(
-                            color:
-                            Colors.white,
-                          )
-                              : const Text(
-                            "Cancel Order",
+                            child:
+                            _isCancelling
+                                ? const SizedBox(
+                                    height: 16,
+                                    width: 16,
+                                    child: CircularProgressIndicator(
+                                      color: Colors.white,
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : const Text(
+                              "Cancel Order",
+                              style: TextStyle(fontSize: 13),
+                            ),
                           ),
                         ),
                       ),
                   ],
                 ),
-              );
+              ),
+            );
             },
           );
         },

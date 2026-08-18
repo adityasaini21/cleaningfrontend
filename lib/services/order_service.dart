@@ -227,4 +227,48 @@ class OrderService {
 
     return response.statusCode == 200;
   }
+
+  // =========================================
+  // PHONEPE PAYMENT: INITIATE
+  // =========================================
+  Future<String?> initiatePhonePePayment(int orderId) async {
+    try {
+      final response = await ApiClient.post(
+        Uri.parse("$baseUrl/api/payments/phonepe/initiate/$orderId"),
+        headers: {
+          "Authorization": "Bearer ${AuthService.token}",
+        },
+      );
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return data["redirectUrl"];
+      } else {
+        print("PHONEPE INITIATE API ERROR: Status=${response.statusCode}, Body=${response.body}");
+      }
+    } catch (e) {
+      print("PHONEPE INITIATE EXCEPTION: $e");
+    }
+    return null;
+  }
+
+  // =========================================
+  // PHONEPE PAYMENT: CHECK STATUS
+  // =========================================
+  Future<bool> checkOrderPaid(int orderId) async {
+    try {
+      final response = await ApiClient.get(
+        Uri.parse("$baseUrl/api/orders/$orderId"),
+        headers: {
+          "Authorization": "Bearer ${AuthService.token}",
+        },
+      );
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return data["paymentStatus"] == "COMPLETED";
+      }
+    } catch (e) {
+      print("PHONEPE CHECK STATUS ERROR: $e");
+    }
+    return false;
+  }
 }

@@ -54,8 +54,8 @@ class CartScreen extends StatelessWidget {
               padding: EdgeInsets.only(
 
                 top: 12,
-                left: 8,
-                right: 8,
+                left: 0,
+                right: 0,
 
                 // IMPORTANT FIX
                 bottom:
@@ -76,56 +76,31 @@ class CartScreen extends StatelessWidget {
                 return Container(
 
                   margin:
-                  const EdgeInsets.only(
-                    bottom: 16,
+                  const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 4,
                   ),
 
                   decoration: BoxDecoration(
 
+                    color: const Color(0xFF1C1C1E),
                     borderRadius:
-                    BorderRadius.circular(24),
-
-                    gradient:
-                    LinearGradient(
-
-                      colors: [
-
-                        Colors.white
-                            .withOpacity(0.06),
-
-                        Colors.white
-                            .withOpacity(0.03),
-                      ],
-
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
+                    BorderRadius.circular(12),
 
                     border: Border.all(
 
-                      color: Colors.white
-                          .withOpacity(0.08),
+                      color: const Color(0xFF2C2C2E),
+                      width: 0.5,
                     ),
-
-                    boxShadow: [
-
-                      BoxShadow(
-
-                        color: Colors.black
-                            .withOpacity(0.25),
-
-                        blurRadius: 20,
-
-                        offset:
-                        const Offset(0, 10),
-                      ),
-                    ],
                   ),
 
                   child: Padding(
 
                     padding:
-                    const EdgeInsets.all(14),
+                    const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
 
                     child: Row(
 
@@ -142,14 +117,14 @@ class CartScreen extends StatelessWidget {
 
                           child: Container(
 
-                            width: 90,
-                            height: 90,
+                            width: 60,
+                            height: 60,
 
                             decoration:
                             BoxDecoration(
 
                               borderRadius:
-                              BorderRadius.circular(20),
+                              BorderRadius.circular(10),
 
                               gradient:
                               LinearGradient(
@@ -168,7 +143,7 @@ class CartScreen extends StatelessWidget {
                             child: ClipRRect(
 
                               borderRadius:
-                              BorderRadius.circular(20),
+                              BorderRadius.circular(10),
 
                               child:
                               CachedNetworkImage(
@@ -220,7 +195,7 @@ class CartScreen extends StatelessWidget {
 
                                 product.name,
 
-                                maxLines: 2,
+                                maxLines: 1,
 
                                 overflow:
                                 TextOverflow.ellipsis,
@@ -228,22 +203,22 @@ class CartScreen extends StatelessWidget {
                                 style:
                                 const TextStyle(
 
-                                  fontSize: 16,
+                                  fontSize: 14,
 
                                   fontWeight:
                                   FontWeight.bold,
                                 ),
                               ),
 
-                              const SizedBox(height: 8),
+                              const SizedBox(height: 4),
 
                               Container(
 
                                 padding:
                                 const EdgeInsets.symmetric(
 
-                                  horizontal: 10,
-                                  vertical: 4,
+                                  horizontal: 8,
+                                  vertical: 2,
                                 ),
 
                                 decoration:
@@ -264,6 +239,7 @@ class CartScreen extends StatelessWidget {
                                   const TextStyle(
 
                                     color: Colors.green,
+                                    fontSize: 13,
 
                                     fontWeight:
                                     FontWeight.bold,
@@ -271,7 +247,7 @@ class CartScreen extends StatelessWidget {
                                 ),
                               ),
 
-                              const SizedBox(height: 16),
+                              const SizedBox(height: 8),
 
                               Row(
 
@@ -350,7 +326,7 @@ class CartScreen extends StatelessWidget {
 
                             color: Colors.redAccent,
 
-                            size: 28,
+                            size: 20,
                           ),
                         ),
                       ],
@@ -372,23 +348,21 @@ class CartScreen extends StatelessWidget {
       bottomSheet: Container(
 
         margin: EdgeInsets.only(
-          left: 16,
-          right: 16,
-          bottom: MediaQuery.of(context).padding.bottom + 10,
+          left: 12,
+          right: 12,
+          bottom: MediaQuery.of(context).padding.bottom + 8,
         ),
 
-        padding: const EdgeInsets.fromLTRB(
-          16,
-          10,
-          16,
-          10,
+        padding: const EdgeInsets.symmetric(
+          horizontal: 14,
+          vertical: 8,
         ),
 
         decoration: BoxDecoration(
 
           color: const Color(0xFF111827),
 
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(16),
 
           border: Border.all(
             color: Colors.white.withOpacity(0.05),
@@ -427,7 +401,7 @@ class CartScreen extends StatelessWidget {
 
                     style: TextStyle(
 
-                      fontSize: 14,
+                      fontSize: 13,
 
                       color: Colors.grey.shade400,
                     ),
@@ -439,7 +413,7 @@ class CartScreen extends StatelessWidget {
 
                     style: const TextStyle(
 
-                      fontSize: 16,
+                      fontSize: 14,
 
                       fontWeight: FontWeight.w600,
                     ),
@@ -447,7 +421,7 @@ class CartScreen extends StatelessWidget {
                 ],
               ),
 
-              const SizedBox(height: 10),
+              const SizedBox(height: 6),
 
               Row(
 
@@ -462,7 +436,7 @@ class CartScreen extends StatelessWidget {
 
                     style: TextStyle(
 
-                      fontSize: 14,
+                      fontSize: 13,
 
                       color: Colors.grey.shade400,
                     ),
@@ -474,16 +448,16 @@ class CartScreen extends StatelessWidget {
                         "₹30.00",
                         style: TextStyle(
                           color: Colors.grey.shade400,
-                          fontSize: 14,
+                          fontSize: 13,
                           decoration: TextDecoration.lineThrough,
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 6),
                       Text(
                         "FREE",
                         style: TextStyle(
                           color: Colors.green.shade400,
-                          fontSize: 15,
+                          fontSize: 13,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -495,7 +469,7 @@ class CartScreen extends StatelessWidget {
               const Padding(
 
                 padding: EdgeInsets.symmetric(
-                  vertical: 8,
+                  vertical: 4,
                 ),
 
                 child: Divider(
@@ -516,7 +490,7 @@ class CartScreen extends StatelessWidget {
 
                     style: TextStyle(
 
-                      fontSize: 18,
+                      fontSize: 15,
 
                       fontWeight: FontWeight.w600,
                     ),
@@ -528,7 +502,7 @@ class CartScreen extends StatelessWidget {
 
                     style: TextStyle(
 
-                      fontSize: 24,
+                      fontSize: 18,
 
                       fontWeight: FontWeight.bold,
 
@@ -538,7 +512,7 @@ class CartScreen extends StatelessWidget {
                 ],
               ),
 
-              const SizedBox(height: 10),
+              const SizedBox(height: 8),
 
               SizedBox(
 
@@ -570,11 +544,17 @@ class CartScreen extends StatelessWidget {
                     foregroundColor:
                     Colors.white,
 
+                    disabledBackgroundColor:
+                    const Color(0xFF2563EB).withOpacity(0.24),
+
+                    disabledForegroundColor:
+                    Colors.white.withOpacity(0.4),
+
                     shape:
                     RoundedRectangleBorder(
 
                       borderRadius:
-                      BorderRadius.circular(20),
+                      BorderRadius.circular(12),
                     ),
                   ),
 
@@ -631,12 +611,12 @@ class CartScreen extends StatelessWidget {
       onTap: onTap,
 
       borderRadius:
-      BorderRadius.circular(12),
+      BorderRadius.circular(8),
 
       child: Container(
 
-        width: 34,
-        height: 34,
+        width: 32,
+        height: 32,
 
         decoration: BoxDecoration(
 
@@ -644,12 +624,12 @@ class CartScreen extends StatelessWidget {
               .withOpacity(0.08),
 
           borderRadius:
-          BorderRadius.circular(12),
+          BorderRadius.circular(8),
         ),
 
         child: Icon(
           icon,
-          size: 18,
+          size: 16,
         ),
       ),
     );

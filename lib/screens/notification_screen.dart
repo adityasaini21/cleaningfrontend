@@ -228,10 +228,10 @@ class _NotificationScreenState
                               background: Container(
                                 margin: const EdgeInsets.symmetric(
                                   horizontal: 12,
-                                  vertical: 6,
+                                  vertical: 4,
                                 ),
                                 alignment: Alignment.centerRight,
-                                padding: const EdgeInsets.only(right: 20),
+                                padding: const EdgeInsets.only(right: 16),
                                 decoration: BoxDecoration(
                                   color: const Color(0xFFFF453A), // iOS system red
                                   borderRadius: BorderRadius.circular(12),
@@ -239,47 +239,80 @@ class _NotificationScreenState
                                 child: const Icon(
                                   Icons.delete_outline,
                                   color: Colors.white,
-                                  size: 26,
+                                  size: 20,
                                 ),
                               ),
                               onDismissed: (direction) {
                                 _deleteNotification(n, index);
                               },
-                              child: Card(
-                                margin: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 6,
-                                ),
-                                child: ListTile(
-                                  leading: CircleAvatar(
-                                    backgroundColor: n.isRead ? Colors.grey : const Color(0xFFFF453A),
-                                    child: const Icon(
-                                      Icons.notifications,
-                                      color: Colors.white,
-                                    ),
+                              child: GestureDetector(
+                                onTap: () => _markAsRead(n),
+                                child: Container(
+                                  margin: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 4,
                                   ),
-                                  title: Text(
-                                    n.title,
-                                    style: TextStyle(
-                                      fontWeight: n.isRead ? FontWeight.normal : FontWeight.bold,
-                                    ),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 8,
                                   ),
-                                  subtitle: Column(
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF1C1C1E),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(color: const Color(0xFF2C2C2E), width: 0.5),
+                                  ),
+                                  child: Row(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      const SizedBox(height: 4),
-                                      Text(n.message),
-                                      const SizedBox(height: 6),
-                                      Text(
-                                        n.createdAt,
-                                        style: const TextStyle(
-                                          fontSize: 12,
-                                          color: Colors.grey,
+                                      // Compact circular status icon background (red when unread, grey when read)
+                                      Padding(
+                                        padding: const EdgeInsets.only(right: 10),
+                                        child: Container(
+                                          padding: const EdgeInsets.all(4),
+                                          decoration: BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            color: n.isRead ? Colors.grey.withOpacity(0.2) : const Color(0xFFFF453A),
+                                          ),
+                                          child: const Icon(
+                                            Icons.notifications,
+                                            size: 12,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                      ),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              n.title,
+                                              style: TextStyle(
+                                                fontSize: 14,
+                                                fontWeight: n.isRead ? FontWeight.normal : FontWeight.bold,
+                                                color: Colors.white,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 2),
+                                            Text(
+                                              n.message,
+                                              style: const TextStyle(
+                                                fontSize: 12,
+                                                color: Colors.white70,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 4),
+                                            Text(
+                                              n.createdAt,
+                                              style: const TextStyle(
+                                                fontSize: 9,
+                                                color: Colors.grey,
+                                              ),
+                                            ),
+                                          ],
                                         ),
                                       ),
                                     ],
                                   ),
-                                  onTap: () => _markAsRead(n),
                                 ),
                               ),
                             );

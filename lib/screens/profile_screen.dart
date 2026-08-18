@@ -386,45 +386,45 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
+                padding: const EdgeInsets.symmetric(horizontal: 18),
                 child: Form(
                   key: _formKey,
                   child: Column(
                     children: [
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 18),
 
                       // Avatar & Welcome Text
                       CircleAvatar(
-                        radius: 55,
+                        radius: 40,
                         backgroundColor: Colors.blue.shade600,
                         child: Text(
                           firstName.isNotEmpty ? firstName[0].toUpperCase() : "U",
                           style: const TextStyle(
-                            fontSize: 40,
+                            fontSize: 28,
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 12),
                       Text(
                         "Hello, $firstName 👋",
                         style: const TextStyle(
-                          fontSize: 24,
+                          fontSize: 18,
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
                         ),
                       ),
-                      const SizedBox(height: 6),
+                      const SizedBox(height: 4),
                       const Text(
                         "Welcome to NuKlean",
                         style: TextStyle(
-                          fontSize: 14,
+                          fontSize: 12,
                           color: Colors.grey,
                         ),
                       ),
 
-                      const SizedBox(height: 30),
+                      const SizedBox(height: 28),
 
                       // Grouped Card: Personal Info & Settings
                       _buildSettingsGroup([
@@ -445,7 +445,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                       ]),
 
-                      const SizedBox(height: 25),
+                      const SizedBox(height: 28),
 
                       // Section Title: Personal Details
                       const Align(
@@ -531,12 +531,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       // Save Button
                       SizedBox(
                         width: double.infinity,
-                        height: 52,
+                        height: 42,
                         child: ElevatedButton(
                           onPressed: (_isEditing && _hasChanges() && !_isSaving) ? _saveProfile : null,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF0A84FF), // iOS Blue
                             disabledBackgroundColor: const Color(0xFF2C2C2E), // Grayed out when inactive
+                            padding: EdgeInsets.zero,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
@@ -551,7 +552,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               : Text(
                                   "Save Changes",
                                   style: TextStyle(
-                                    fontSize: 16,
+                                    fontSize: 14,
                                     fontWeight: FontWeight.bold,
                                     color: (_isEditing && _hasChanges()) ? Colors.white : Colors.grey,
                                   ),
@@ -589,11 +590,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Container(
       decoration: BoxDecoration(
         color: const Color(0xFF1C1C1E), // iOS SystemGray6
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: const Color(0xFF2C2C2E), width: 0.5),
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(12),
         child: Column(
           children: children,
         ),
@@ -605,7 +606,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Container(
       decoration: BoxDecoration(
         color: const Color(0xFF1C1C1E), // iOS SystemGray6
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: const Color(0xFF2C2C2E), width: 0.5),
       ),
       child: Column(

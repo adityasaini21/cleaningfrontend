@@ -13,6 +13,7 @@ import '../services/auth_service.dart';
 
 import 'login_screen.dart';
 import 'product_detail_screen.dart';
+import 'deleted_products_screen.dart';
 
 class ProductListScreen extends StatefulWidget {
 
@@ -882,6 +883,20 @@ class _ProductListScreenState
           ),
         ),
         actions: [
+          if (_isAdmin)
+            IconButton(
+              icon: const Icon(Icons.settings_backup_restore, color: Colors.white),
+              onPressed: () async {
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const DeletedProductsScreen(),
+                  ),
+                );
+                _loadProducts();
+              },
+              tooltip: "Restore Deleted Products",
+            ),
           Stack(
             children: [
               IconButton(

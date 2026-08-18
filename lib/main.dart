@@ -18,6 +18,7 @@ import 'screens/splash_screen.dart';
 
 import 'theme/app_theme.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'core/config/api_config.dart';
 
 // =========================================
 // BACKGROUND MESSAGE HANDLER
@@ -43,6 +44,9 @@ void main() async {
 
   // Load .env
   await dotenv.load(fileName: ".env");
+
+  // Initialize API config (checks for physical device vs emulator)
+  await ApiConfig.init();
 
   // Firebase
   await Firebase.initializeApp();

@@ -6,6 +6,7 @@ import '../services/order_service.dart';
 import '../services/auth_service.dart';
 import '../services/profile_service.dart';
 import 'order_success_screen.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class CheckoutScreen extends StatefulWidget {
   const CheckoutScreen({super.key});
@@ -30,7 +31,7 @@ class _CheckoutScreenState
   final OrderService _orderService =
   OrderService();
 
-  String _paymentMethod = "COD";
+  String _paymentMethod = "ONLINE";
 
   bool _loading = false;
 
@@ -62,6 +63,97 @@ class _CheckoutScreenState
           ? "Delivery available in your area"
           : "Sorry, delivery is not available in your area";
     });
+  }
+
+  void _showPaymentVerificationDialog(int orderId) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        bool verifying = false;
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              backgroundColor: const Color(0xFF1C1C1E),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+                side: const BorderSide(color: Color(0xFF2C2C2E), width: 0.5),
+              ),
+              title: const Row(
+                children: [
+                  Icon(Icons.security, color: Color(0xFF30D158)),
+                  SizedBox(width: 8),
+                  Text("Online Payment", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                ],
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (verifying) ...[
+                    const CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF30D158))),
+                    const SizedBox(height: 16),
+                    const Text("Verifying transaction status...", style: TextStyle(color: Colors.white70, fontSize: 14)),
+                  ] else ...[
+                    const Text(
+                      "We have opened the payment gateway. Once you complete the payment in the browser/UPI app, return here and tap 'Verify Payment'.",
+                      style: TextStyle(color: Color(0xFF8E8E93), fontSize: 14, height: 1.4),
+                    ),
+                  ],
+                ],
+              ),
+              actions: [
+                if (!verifying) ...[
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pop(dialogContext);
+                    },
+                    child: const Text("Cancel", style: TextStyle(color: Colors.grey)),
+                  ),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF30D158),
+                      foregroundColor: Colors.black,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                    onPressed: () async {
+                      setDialogState(() {
+                        verifying = true;
+                      });
+
+                      final isPaid = await _orderService.checkOrderPaid(orderId);
+
+                      if (isPaid) {
+                        final cart = Provider.of<CartProvider>(context, listen: false);
+                        cart.clearCart();
+                        if (!mounted) return;
+                        Navigator.pop(dialogContext); // close dialog
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const OrderSuccessScreen(),
+                          ),
+                        );
+                      } else {
+                        setDialogState(() {
+                          verifying = false;
+                        });
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text("Payment not received yet. If you paid, please wait a moment and try again."),
+                            duration: Duration(seconds: 3),
+                          ),
+                        );
+                      }
+                    },
+                    child: const Text("Verify Payment", style: TextStyle(fontWeight: FontWeight.bold)),
+                  ),
+                ],
+              ],
+            );
+          },
+        );
+      },
+    );
   }
 
   // =========================================
@@ -108,56 +200,88 @@ class _CheckoutScreenState
       _loading = true;
     });
 
-    final orderId =
-    await _orderService.placeOrder(
-
-      shippingAddress:
-      _addressController.text,
-
-      phoneNumber:
-      _phoneController.text,
-
-      pincode:
-      _pincodeController.text,
-
-      paymentMethod:
-      _paymentMethod,
-
+    final orderId = await _orderService.placeOrder(
+      shippingAddress: _addressController.text,
+      phoneNumber: _phoneController.text,
+      pincode: _pincodeController.text,
+      paymentMethod: _paymentMethod,
       items: cart.items,
     );
 
-    setState(() {
-      _loading = false;
-    });
-
     if (orderId == null) {
-
-      ScaffoldMessenger.of(context)
-          .showSnackBar(
-
-        const SnackBar(
-          content:
-          Text("Order failed"),
-        ),
+      setState(() {
+        _loading = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Order failed")),
       );
-
       return;
     }
 
-    cart.clearCart();
+    if (_paymentMethod == "ONLINE") {
+      final redirectUrl = await _orderService.initiatePhonePePayment(orderId);
+      
+      setState(() {
+        _loading = false;
+      });
 
-    if (!mounted) return;
+      if (redirectUrl == null) {
+        cart.clearCart();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Failed to initiate online payment. Order placed.")),
+        );
+        if (!mounted) return;
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const OrderSuccessScreen(),
+          ),
+        );
+        return;
+      }
 
-    Navigator.pushReplacement(
+      try {
+        final launchSuccess = await launchUrl(
+          Uri.parse(redirectUrl),
+          mode: LaunchMode.externalApplication,
+        );
 
-      context,
+        if (!launchSuccess) {
+          cart.clearCart();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Could not launch payment gateway. Order placed.")),
+          );
+          if (!mounted) return;
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const OrderSuccessScreen(),
+            ),
+          );
+          return;
+        }
 
-      MaterialPageRoute(
+        if (!mounted) return;
+        _showPaymentVerificationDialog(orderId);
 
-        builder: (_) =>
-        const OrderSuccessScreen(),
-      ),
-    );
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error launching payment: $e")),
+        );
+      }
+    } else {
+      setState(() {
+        _loading = false;
+      });
+      cart.clearCart();
+      if (!mounted) return;
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const OrderSuccessScreen(),
+        ),
+      );
+    }
   }
 
   // =========================================
@@ -173,7 +297,7 @@ class _CheckoutScreenState
       width: double.infinity,
 
       padding:
-      const EdgeInsets.all(18),
+      const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
 
       decoration: BoxDecoration(
 
@@ -181,27 +305,14 @@ class _CheckoutScreenState
         const Color(0xFF111827),
 
         borderRadius:
-        BorderRadius.circular(22),
+        BorderRadius.circular(12),
 
         border: Border.all(
 
           color:
-          Colors.white.withOpacity(0.05),
+          Colors.white.withOpacity(0.08),
+          width: 0.5,
         ),
-
-        boxShadow: [
-
-          BoxShadow(
-
-            color: Colors.black
-                .withOpacity(0.18),
-
-            blurRadius: 18,
-
-            offset:
-            const Offset(0, 8),
-          ),
-        ],
       ),
 
       child: child,
@@ -460,6 +571,18 @@ class _CheckoutScreenState
                     keyboardType:
                     TextInputType.number,
 
+                    onChanged: (value) {
+                      final val = value.trim();
+                      if (val.length != 6) {
+                        setState(() {
+                          _isDeliverable = false;
+                          _deliveryMessage = "Pincode must be exactly 6 digits";
+                        });
+                      } else {
+                        _checkDelivery();
+                      }
+                    },
+
                     decoration:
                     InputDecoration(
 
@@ -610,59 +733,141 @@ class _CheckoutScreenState
                   ),
 
                   const SizedBox(height: 14),
-
-                  Container(
-
-                    padding:
-                    const EdgeInsets.all(
-                      14,
-                    ),
-
-                    decoration:
-                    BoxDecoration(
-
-                      color: Colors.green
-                          .withOpacity(
-                          0.10),
-
-                      borderRadius:
-                      BorderRadius.circular(
-                        14,
-                      ),
-
-                      border: Border.all(
-                        color:
-                        Colors.green,
-                      ),
-                    ),
-
-                    child: const Row(
-
-                      children: [
-
-                        Icon(
-                          Icons.payments,
-                          color:
-                          Colors.green,
+                  
+                  // PhonePe Online Option
+                  GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _paymentMethod = "ONLINE";
+                      });
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: _paymentMethod == "ONLINE"
+                            ? const Color(0xFF1C1C1E)
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: _paymentMethod == "ONLINE"
+                              ? const Color(0xFF30D158)
+                              : const Color(0xFF2C2C2E),
+                          width: _paymentMethod == "ONLINE" ? 1.5 : 0.5,
                         ),
-
-                        SizedBox(width: 10),
-
-                        Expanded(
-
-                          child: Text(
-
-                            "Cash on Delivery (COD)",
-
-                            style:
-                            TextStyle(
-
-                              fontWeight:
-                              FontWeight.bold,
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.account_balance_wallet,
+                            color: _paymentMethod == "ONLINE"
+                                ? const Color(0xFF30D158)
+                                : const Color(0xFF8E8E93),
+                          ),
+                          const SizedBox(width: 12),
+                          const Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  "Pay Online (PhonePe)",
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                                SizedBox(height: 2),
+                                Text(
+                                  "UPI, Cards, Netbanking & Wallets",
+                                  style: TextStyle(
+                                    color: Color(0xFF8E8E93),
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
+                          Radio<String>(
+                            value: "ONLINE",
+                            groupValue: _paymentMethod,
+                            activeColor: const Color(0xFF30D158),
+                            onChanged: (val) {
+                              setState(() {
+                                _paymentMethod = val!;
+                              });
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  // COD Option
+                  GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _paymentMethod = "COD";
+                      });
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: _paymentMethod == "COD"
+                            ? const Color(0xFF1C1C1E)
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: _paymentMethod == "COD"
+                              ? const Color(0xFF30D158)
+                              : const Color(0xFF2C2C2E),
+                          width: _paymentMethod == "COD" ? 1.5 : 0.5,
                         ),
-                      ],
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.payments,
+                            color: _paymentMethod == "COD"
+                                ? const Color(0xFF30D158)
+                                : const Color(0xFF8E8E93),
+                          ),
+                          const SizedBox(width: 12),
+                          const Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  "Cash on Delivery (COD)",
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                                SizedBox(height: 2),
+                                Text(
+                                  "Pay with cash upon delivery",
+                                  style: TextStyle(
+                                    color: Color(0xFF8E8E93),
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Radio<String>(
+                            value: "COD",
+                            groupValue: _paymentMethod,
+                            activeColor: const Color(0xFF30D158),
+                            onChanged: (val) {
+                              setState(() {
+                                _paymentMethod = val!;
+                              });
+                            },
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ],
@@ -819,27 +1024,35 @@ class _CheckoutScreenState
 
       bottomNavigationBar: Container(
 
-        padding:
-        const EdgeInsets.fromLTRB(
-          16,
-          12,
-          16,
-          16,
+        margin: EdgeInsets.only(
+          left: 12,
+          right: 12,
+          bottom: MediaQuery.of(context).padding.bottom + 8,
+        ),
+
+        padding: const EdgeInsets.symmetric(
+          horizontal: 14,
+          vertical: 8,
         ),
 
         decoration: BoxDecoration(
 
-          color:
-          const Color(0xFF111827),
+          color: const Color(0xFF111827),
 
-          border: Border(
+          borderRadius: BorderRadius.circular(16),
 
-            top: BorderSide(
-
-              color: Colors.white
-                  .withOpacity(0.05),
-            ),
+          border: Border.all(
+            color: Colors.white.withOpacity(0.05),
           ),
+
+          boxShadow: [
+
+            BoxShadow(
+              color: Colors.black.withOpacity(0.25),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
+            ),
+          ],
         ),
 
         child: SafeArea(
@@ -848,17 +1061,14 @@ class _CheckoutScreenState
 
           child: SizedBox(
 
-            height: 56,
+            height: 42,
 
             child: ElevatedButton(
 
               onPressed:
-
               (_isDeliverable &&
                   !_loading)
-
                   ? _placeOrder
-
                   : null,
 
               style:
@@ -870,12 +1080,18 @@ class _CheckoutScreenState
                 foregroundColor:
                 Colors.white,
 
+                disabledBackgroundColor:
+                const Color(0xFF2563EB).withOpacity(0.24),
+
+                disabledForegroundColor:
+                Colors.white.withOpacity(0.4),
+
                 shape:
                 RoundedRectangleBorder(
 
                   borderRadius:
                   BorderRadius.circular(
-                    18,
+                    12,
                   ),
                 ),
               ),
