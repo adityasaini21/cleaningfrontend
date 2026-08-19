@@ -208,13 +208,12 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
 
                     const SizedBox(height: 24),
 
-                    TextField(
+                     TextField(
                       controller: newPasswordController,
                       obscureText: obscureNewPassword,
                       enabled: !resetting,
                       decoration: InputDecoration(
                         labelText: "New Password",
-                        border: const OutlineInputBorder(),
                         prefixIcon:
                         const Icon(Icons.lock),
                         suffixIcon: IconButton(
@@ -243,7 +242,6 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                       enabled: !resetting,
                       decoration: InputDecoration(
                         labelText: "Confirm Password",
-                        border: const OutlineInputBorder(),
                         prefixIcon: const Icon(
                           Icons.lock_outline,
                         ),
@@ -374,10 +372,6 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                   },
                 )
                     : null,
-                border: OutlineInputBorder(
-                  borderRadius:
-                  BorderRadius.circular(12),
-                ),
               ),
             ),
 
@@ -466,11 +460,15 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
               ),
 
               leading: CircleAvatar(
+                backgroundColor: const Color(0xFF0A84FF).withOpacity(0.12),
                 child: Text(
                   user.fullName.isNotEmpty
-                      ? user.fullName[0]
-                      .toUpperCase()
+                      ? user.fullName[0].toUpperCase()
                       : "?",
+                  style: const TextStyle(
+                    color: Color(0xFF0A84FF),
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
 

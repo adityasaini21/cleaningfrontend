@@ -2,10 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
-import '../services/auth_service.dart';
-import 'admin_dashboard_screen.dart';
-import 'login_screen.dart';
-import 'main_navigation_screen.dart';
+import 'loading_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -15,7 +12,6 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMixin {
-  final AuthService _authService = AuthService();
   late AnimationController _timelineController;
 
   // Phase 1 Animations (0.0s - 1.0s) -> [0.0 - 0.33]
@@ -150,13 +146,9 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
     if (_hasTransitioned) return;
     _hasTransitioned = true;
 
-    // Transition with absolute zero white flash
+    // Transition with absolute zero white flash to LoadingScreen
     final PageRouteBuilder routeBuilder = PageRouteBuilder(
-      pageBuilder: (context, animation, secondaryAnimation) {
-        if (!_authService.isLoggedIn) return const LoginScreen();
-        if (_authService.isAdmin()) return const AdminDashboardScreen();
-        return const MainNavigationScreen();
-      },
+      pageBuilder: (context, animation, secondaryAnimation) => const LoadingScreen(),
       transitionsBuilder: (context, animation, secondaryAnimation, child) {
         return FadeTransition(
           opacity: animation,

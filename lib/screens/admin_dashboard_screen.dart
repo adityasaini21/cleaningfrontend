@@ -136,7 +136,7 @@ class _AdminDashboardScreenState
       ),
 
       body: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 20),
 
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -145,22 +145,22 @@ class _AdminDashboardScreenState
             const Text(
               "Welcome, Admin",
               style: TextStyle(
-                fontSize: 28,
+                fontSize: 24, // Matches target screen header proportions
                 fontWeight: FontWeight.bold,
               ),
             ),
 
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
 
             const Text(
               "Manage your Prem Chemicals business",
               style: TextStyle(
-                fontSize: 16,
+                fontSize: 14, // Matches target body subtext proportions
                 color: Colors.grey,
               ),
             ),
 
-            const SizedBox(height: 30),
+            const SizedBox(height: 24),
 
             GridView.count(
               shrinkWrap: true,
@@ -261,12 +261,12 @@ class _AdminDashboardScreenState
     int badgeCount = 0,
   }) {
     return Card(
-      elevation: 2,
+      elevation: 0, // Inherits the premium 0-elevation and 0.5px border styling from AppTheme
 
       child: InkWell(
         onTap: onTap,
 
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(14), // Matches CardTheme boundary rounding
 
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -278,23 +278,23 @@ class _AdminDashboardScreenState
                     label: Text(badgeCount.toString()),
                     child: Icon(
                       icon,
-                      size: 42,
+                      size: 40,
                       color: Theme.of(context).colorScheme.primary,
                     ),
                   )
                 : Icon(
                     icon,
-                    size: 42,
+                    size: 40,
                     color: Theme.of(context).colorScheme.primary,
                   ),
 
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
 
             Text(
               title,
               style: const TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.bold,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ],

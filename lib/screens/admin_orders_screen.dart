@@ -579,15 +579,18 @@ class _AdminOrdersScreenState
                       bottom: 16,
                     ),
 
-                    shape:
-                    RoundedRectangleBorder(
-                      borderRadius:
-                      BorderRadius.circular(
-                        16,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      side: const BorderSide(
+                        color: Color(0xFF2C2C2E),
+                        width: 0.5,
                       ),
                     ),
 
                     child: ExpansionTile(
+                      shape: const Border(),
+                      collapsedShape: const Border(),
 
                       title: Text(
                         "Order #${order.orderId}",
@@ -870,8 +873,6 @@ class _AdminOrdersScreenState
                                 decoration: const InputDecoration(
 
                                   labelText: "Delivery Boy Name",
-
-                                  border: OutlineInputBorder(),
                                 ),
                               ),
 
@@ -886,8 +887,6 @@ class _AdminOrdersScreenState
                                 decoration: const InputDecoration(
 
                                   labelText: "Delivery Boy Phone",
-
-                                  border: OutlineInputBorder(),
                                 ),
                               ),
 
@@ -976,9 +975,6 @@ class _AdminOrdersScreenState
                             const InputDecoration(
                               labelText:
                               "Update Status",
-
-                              border:
-                              OutlineInputBorder(),
                             ),
 
                             items: [
@@ -1053,11 +1049,15 @@ class _AdminOrdersScreenState
 
       decoration: BoxDecoration(
 
-        color:
-        color.withOpacity(0.12),
+        color: const Color(0xFF1C1C1E), // Apple System Gray 6 card color
 
         borderRadius:
-        BorderRadius.circular(18),
+        BorderRadius.circular(12), // Consistent with global card rounding
+
+        border: Border.all(
+          color: color.withOpacity(0.2), // Accent category color border
+          width: 0.8,
+        ),
       ),
 
       child: Column(
