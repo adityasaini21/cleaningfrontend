@@ -6,6 +6,7 @@ import '../services/cart_provider.dart';
 import '../models/user_profile.dart';
 import '../core/constants/india_states_cities.dart';
 import 'login_screen.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class ProfileScreen extends StatefulWidget {
   final VoidCallback onOrdersTap;
@@ -282,6 +283,86 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  void _showCustomerCareBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF1C1C1E),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  "Help & Support",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  "Reach out to us for anything! Whether you have questions about products, delivery timings, pricing, or need help with your orders, we are here to help.",
+                  style: TextStyle(
+                    color: Color(0xFF8E8E93),
+                    fontSize: 14,
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                
+                // Contact options list
+                Container(
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF2C2C2E),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    children: [
+                      ListTile(
+                        leading: const Icon(Icons.phone_outlined, color: Color(0xFF0A84FF)),
+                        title: const Text("Call Customer Support", style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w500)),
+                        subtitle: const Text("+91 9795611275", style: TextStyle(color: Colors.grey, fontSize: 13)),
+                        trailing: const Icon(Icons.arrow_forward_ios, size: 12, color: Colors.grey),
+                        onTap: () async {
+                          final uri = Uri.parse("tel:+919795611275");
+                          if (await canLaunchUrl(uri)) {
+                            await launchUrl(uri);
+                          }
+                        },
+                      ),
+                      const Divider(color: Color(0xFF38383A), height: 1, indent: 56),
+                      ListTile(
+                        leading: const Icon(Icons.chat_bubble_outline_rounded, color: Color(0xFF30D158)),
+                        title: const Text("Chat on WhatsApp", style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w500)),
+                        subtitle: const Text("Tap to message admin", style: TextStyle(color: Colors.grey, fontSize: 13)),
+                        trailing: const Icon(Icons.arrow_forward_ios, size: 12, color: Colors.grey),
+                        onTap: () async {
+                          final url = "https://wa.me/919795611275?text=${Uri.encodeComponent('Hello support team, I have a query regarding...')}";
+                          final uri = Uri.parse(url);
+                          if (await canLaunchUrl(uri)) {
+                            await launchUrl(uri);
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Future<void> _showLogoutConfirmation(BuildContext context, AuthService authService) async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -430,6 +511,36 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           subtitle: const Text("Keep your account secure", style: TextStyle(color: Colors.grey, fontSize: 12)),
                           trailing: const Icon(Icons.arrow_forward_ios, size: 14, color: Colors.grey),
                           onTap: _showChangePasswordDialog,
+                        ),
+                      ]),
+
+                      const SizedBox(height: 24),
+
+                      // Section Title: Help & Support
+                      const Align(
+                        alignment: Alignment.centerLeft,
+                        child: Padding(
+                          padding: EdgeInsets.only(left: 8, bottom: 8),
+                          child: Text(
+                            "HELP & SUPPORT",
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.grey,
+                              letterSpacing: 1.2,
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      // Grouped Card: Help Section
+                      _buildSettingsGroup([
+                        ListTile(
+                          leading: const Icon(Icons.support_agent_rounded, color: Colors.white70),
+                          title: const Text("Customer Care", style: TextStyle(color: Colors.white)),
+                          subtitle: const Text("Reach out to us for any help or queries", style: TextStyle(color: Colors.grey, fontSize: 12)),
+                          trailing: const Icon(Icons.arrow_forward_ios, size: 14, color: Colors.grey),
+                          onTap: _showCustomerCareBottomSheet,
                         ),
                       ]),
 

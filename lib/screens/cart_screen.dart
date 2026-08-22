@@ -26,18 +26,27 @@ class CartScreen extends StatelessWidget {
       ),
 
       body: cart.items.isEmpty
-
-          ? const Center(
-
-        child: Text(
-
-          "Your cart is empty",
-
-          style: TextStyle(
-            fontSize: 18,
-          ),
-        ),
-      )
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.shopping_cart_outlined,
+                    size: 64,
+                    color: Colors.grey.shade600,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    "Your cart is empty",
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.grey.shade400,
+                    ),
+                  ),
+                ],
+              ),
+            )
 
           : Column(
 
@@ -345,8 +354,9 @@ class CartScreen extends StatelessWidget {
 
 
 
-      bottomSheet: Container(
-
+      bottomSheet: cart.items.isEmpty
+          ? null
+          : Container(
         margin: EdgeInsets.only(
           left: 12,
           right: 12,
@@ -512,7 +522,38 @@ class CartScreen extends StatelessWidget {
                 ],
               ),
 
-              const SizedBox(height: 8),
+              if (cart.totalAmount < 200.0) ...[
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFF453A).withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: const Color(0xFFFF453A).withOpacity(0.3),
+                      width: 0.5,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.warning_amber_rounded, color: Color(0xFFFF453A), size: 18),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          "Add items worth ₹${(200.0 - cart.totalAmount).toStringAsFixed(2)} more to checkout (Min order ₹200).",
+                          style: const TextStyle(
+                            color: Color(0xFFFF453A),
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+
+              const SizedBox(height: 12),
 
               SizedBox(
 
@@ -522,7 +563,7 @@ class CartScreen extends StatelessWidget {
 
                 child: ElevatedButton(
 
-                  onPressed: cart.items.isEmpty
+                  onPressed: cart.items.isEmpty || cart.totalAmount < 200.0
                       ? null
                       : () {
                     Navigator.push(

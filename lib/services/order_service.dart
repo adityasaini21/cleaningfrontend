@@ -49,6 +49,36 @@ class OrderService {
   }
 
   // =========================================
+  // GET DELIVERY CHARGE
+  // =========================================
+
+  Future<double> getDeliveryCharge({
+    required String address,
+    required String pincode,
+  }) async {
+    try {
+      final encodedAddress = Uri.encodeComponent(address);
+      final encodedPincode = Uri.encodeComponent(pincode);
+
+      final response = await ApiClient.get(
+        Uri.parse("$baseUrl/api/orders/delivery-charge?address=$encodedAddress&pincode=$encodedPincode"),
+        headers: {
+          "Authorization": "Bearer ${AuthService.token}",
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return (data["deliveryCharge"] as num).toDouble();
+      }
+      return 30.0; // Fallback
+    } catch (e) {
+      print("DELIVERY CHARGE FETCH ERROR: $e");
+      return 30.0; // Fallback
+    }
+  }
+
+  // =========================================
   // CREATE ORDER
   // =========================================
 

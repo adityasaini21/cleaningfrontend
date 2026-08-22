@@ -38,27 +38,31 @@ class _CheckoutScreenState
   bool _isDeliverable = false;
 
   String _deliveryMessage = "";
+  double _deliveryCharge = 0.0; // Will be calculated dynamically
 
   // =========================================
   // CHECK PINCODE
   // =========================================
 
   Future<void> _checkDelivery() async {
-
-    final pincode =
-    _pincodeController.text.trim();
+    final pincode = _pincodeController.text.trim();
+    final address = _addressController.text.trim();
 
     if (pincode.isEmpty) return;
 
-    final result =
-    await _orderService.checkPincode(
-      pincode,
-    );
+    final result = await _orderService.checkPincode(pincode);
+
+    double charge = 0.0;
+    if (result && address.isNotEmpty) {
+      charge = await _orderService.getDeliveryCharge(
+        address: address,
+        pincode: pincode,
+      );
+    }
 
     setState(() {
-
       _isDeliverable = result;
-
+      _deliveryCharge = charge;
       _deliveryMessage = result
           ? "Delivery available in your area"
           : "Sorry, delivery is not available in your area";
@@ -415,6 +419,7 @@ class _CheckoutScreenState
     _pincodeController.clear();
     setState(() {
       _isDeliverable = false;
+      _deliveryCharge = 0.0;
       _deliveryMessage = "";
     });
   }
@@ -495,25 +500,15 @@ class _CheckoutScreenState
                   const SizedBox(height: 14),
 
                   TextField(
-
-                    controller:
-                    _addressController,
-
+                    controller: _addressController,
                     maxLines: 3,
-
-                    decoration:
-                    InputDecoration(
-
-                      hintText:
-                      "Enter delivery address",
-
-                      border:
-                      OutlineInputBorder(
-
-                        borderRadius:
-                        BorderRadius.circular(
-                          14,
-                        ),
+                    readOnly: true,
+                    style: const TextStyle(color: Color(0xFF8E8E93)),
+                    decoration: InputDecoration(
+                      hintText: "Autofilled from your profile",
+                      hintStyle: const TextStyle(color: Color(0xFF8E8E93)),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
                       ),
                     ),
                   ),
@@ -534,29 +529,16 @@ class _CheckoutScreenState
                 children: [
 
                   TextField(
-
-                    controller:
-                    _phoneController,
-
-                    keyboardType:
-                    TextInputType.phone,
-
-                    decoration:
-                    InputDecoration(
-
-                      labelText:
-                      "Phone Number",
-
-                      prefixIcon:
-                      const Icon(Icons.phone),
-
-                      border:
-                      OutlineInputBorder(
-
-                        borderRadius:
-                        BorderRadius.circular(
-                          14,
-                        ),
+                    controller: _phoneController,
+                    keyboardType: TextInputType.phone,
+                    readOnly: true,
+                    style: const TextStyle(color: Color(0xFF8E8E93)),
+                    decoration: InputDecoration(
+                      labelText: "Phone Number",
+                      labelStyle: const TextStyle(color: Color(0xFF8E8E93)),
+                      prefixIcon: const Icon(Icons.phone, color: Color(0xFF8E8E93)),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
                       ),
                     ),
                   ),
@@ -564,54 +546,40 @@ class _CheckoutScreenState
                   const SizedBox(height: 14),
 
                   TextField(
-
-                    controller:
-                    _pincodeController,
-
-                    keyboardType:
-                    TextInputType.number,
-
-                    onChanged: (value) {
-                      final val = value.trim();
-                      if (val.length != 6) {
-                        setState(() {
-                          _isDeliverable = false;
-                          _deliveryMessage = "Pincode must be exactly 6 digits";
-                        });
-                      } else {
-                        _checkDelivery();
-                      }
-                    },
-
-                    decoration:
-                    InputDecoration(
-
-                      labelText:
-                      "Pincode",
-
-                      prefixIcon:
-                      const Icon(Icons.pin_drop),
-
-                      suffixIcon:
-                      IconButton(
-
-                        onPressed:
-                        _checkDelivery,
-
-                        icon:
-                        const Icon(
-                          Icons.check_circle,
-                        ),
+                    controller: _pincodeController,
+                    keyboardType: TextInputType.number,
+                    readOnly: true,
+                    style: const TextStyle(color: Color(0xFF8E8E93)),
+                    decoration: InputDecoration(
+                      labelText: "Pincode",
+                      labelStyle: const TextStyle(color: Color(0xFF8E8E93)),
+                      prefixIcon: const Icon(Icons.pin_drop, color: Color(0xFF8E8E93)),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
                       ),
+                    ),
+                  ),
 
-                      border:
-                      OutlineInputBorder(
+                  const SizedBox(height: 12),
 
-                        borderRadius:
-                        BorderRadius.circular(
-                          14,
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(Icons.info_outline, color: Color(0xFF8E8E93), size: 16),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            "To change your address, pincode or phone number, please update them in your Profile screen.",
+                            style: TextStyle(
+                              color: Color(0xFF8E8E93),
+                              fontSize: 12,
+                              height: 1.3,
+                            ),
+                          ),
                         ),
-                      ),
+                      ],
                     ),
                   ),
 
@@ -943,22 +911,23 @@ class _CheckoutScreenState
 
                       Row(
                         children: [
-                          Text(
-                            "₹30.00",
-                            style: TextStyle(
-                              color: Colors.grey.shade400,
-                              fontSize: 14,
-                              decoration: TextDecoration.lineThrough,
+                          if (_deliveryCharge > 0) ...[
+                            Text(
+                              "₹${_deliveryCharge.toStringAsFixed(2)}",
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 8),
-                          const Text(
-                            "FREE",
-                            style: TextStyle(
-                              color: Colors.green,
-                              fontWeight: FontWeight.bold,
+                          ] else ...[
+                            const Text(
+                              "FREE",
+                              style: TextStyle(
+                                color: Colors.green,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
-                          ),
+                          ],
                         ],
                       ),
                     ],
@@ -996,7 +965,7 @@ class _CheckoutScreenState
 
                       Text(
 
-                        "₹${cart.totalAmount.toStringAsFixed(2)}",
+                        "₹${(cart.totalAmount + _deliveryCharge).toStringAsFixed(2)}",
 
                         style: const TextStyle(
 
@@ -1079,6 +1048,8 @@ class _CheckoutScreenState
 
                 foregroundColor:
                 Colors.white,
+
+                padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
 
                 disabledBackgroundColor:
                 const Color(0xFF2563EB).withOpacity(0.24),

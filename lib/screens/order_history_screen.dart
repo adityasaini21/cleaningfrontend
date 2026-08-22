@@ -271,9 +271,9 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
   }
 
   bool _showETA(OrderModel order) {
-
     return order.orderStatus != "DELIVERED" &&
-        order.orderStatus != "CANCELLED";
+        order.orderStatus != "CANCELLED" &&
+        _remainingDeliveryTime(order).inMinutes > 0;
   }
 
   // ====================================
@@ -554,27 +554,20 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
   }
 
   String _formatDate(DateTime date) {
-
-    return
-      "${date.day}/"
-          "${date.month}/"
-          "${date.year}";
+    final localDate = date.toLocal();
+    return "${localDate.day}/${localDate.month}/${localDate.year}";
   }
 
   String _formatTime(DateTime date) {
+    final localDate = date.toLocal();
+    int hour = localDate.hour > 12
+        ? localDate.hour - 12
+        : localDate.hour;
 
-    int hour =
-    date.hour > 12
-        ? date.hour - 12
-        : date.hour;
+    if (hour == 0) hour = 12;
 
-    String period =
-    date.hour >= 12
-        ? "PM"
-        : "AM";
-
-    String minute =
-    date.minute.toString().padLeft(2, '0');
+    String period = localDate.hour >= 12 ? "PM" : "AM";
+    String minute = localDate.minute.toString().padLeft(2, '0');
 
     return "$hour:$minute $period";
   }
@@ -655,10 +648,33 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
 
                     children: [
 
-                      Text(
-                        "${_formatDate(order.createdAt)} • ${_formatTime(order.createdAt)}",
-                        style: const TextStyle(fontSize: 11, color: Colors.grey),
-                      ),
+                      if (order.orderStatus == "OUT_FOR_DELIVERY")
+                        const Text(
+                          "Out for delivery - arriving soon at your doorstep!",
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF30D158),
+                          ),
+                        )
+                      else ...[
+                        Text(
+                          "${_formatDate(order.createdAt)} • ${_formatTime(order.createdAt)}",
+                          style: const TextStyle(fontSize: 11, color: Colors.grey),
+                        ),
+                        if (order.orderStatus == "CREATED" || order.orderStatus == "CONFIRMED")
+                          const Padding(
+                            padding: EdgeInsets.only(top: 2.0),
+                            child: Text(
+                              "Delivery in 1-2 days",
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFFFF9F0A),
+                              ),
+                            ),
+                          ),
+                      ],
 
                       const SizedBox(height: 2),
 
@@ -870,6 +886,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
 
                           style: ElevatedButton.styleFrom(
                             elevation: 0,
+                            padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),
@@ -904,6 +921,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                               backgroundColor:
                               Colors.red,
                               elevation: 0,
+                              padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(8),
                               ),

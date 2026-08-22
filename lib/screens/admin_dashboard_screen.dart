@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import '../core/api_client.dart';
 
 import '../services/auth_service.dart';
 import '../services/admin_user_service.dart';
@@ -42,15 +45,18 @@ class _AdminDashboardScreenState
   void initState() {
     super.initState();
     _fetchDashboardBadges();
+    _fetchServiceStatus();
 
     // Listen to real-time events to update dashboard badges instantly
     _notificationSubscription = NotificationService.notificationStream.listen((_) {
       _fetchDashboardBadges();
+      _fetchServiceStatus();
     });
 
     // Periodic reload every 60 seconds to check for updates (cost optimized for Railway)
     _refreshTimer = Timer.periodic(const Duration(seconds: 60), (_) {
       _fetchDashboardBadges();
+      _fetchServiceStatus();
     });
   }
 
@@ -117,6 +123,70 @@ class _AdminDashboardScreenState
       ),
           (route) => false,
     );
+  }
+
+  bool _serviceSuspended = false;
+
+  Future<void> _fetchServiceStatus() async {
+    try {
+      final response = await http.get(
+        Uri.parse("${ApiClient.baseUrl}/api/service-status"),
+      );
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (mounted) {
+          setState(() {
+            _serviceSuspended = data["suspended"] ?? false;
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint("Error fetching service status: $e");
+    }
+  }
+
+  Future<void> _toggleServiceStatus(bool suspend) async {
+    setState(() {
+      _serviceSuspended = suspend;
+    });
+
+    try {
+      final response = await http.post(
+        Uri.parse("${ApiClient.baseUrl}/admin/service-status?suspended=$suspend"),
+        headers: {
+          "Authorization": "Bearer ${AuthService.token}",
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (mounted) {
+          setState(() {
+            _serviceSuspended = data["suspended"] ?? false;
+          });
+        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(suspend
+                ? "Service has been suspended successfully."
+                : "Service is now active and accepting orders."),
+            backgroundColor: suspend ? Colors.red : Colors.green,
+          ),
+        );
+      } else {
+        throw Exception("Failed to update status");
+      }
+    } catch (e) {
+      debugPrint("Error toggling service status: $e");
+      if (mounted) {
+        setState(() {
+          _serviceSuspended = !suspend; // Revert switch state
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Failed to update service status")),
+        );
+      }
+    }
   }
 
   @override
@@ -247,6 +317,65 @@ class _AdminDashboardScreenState
                   },
                 ),
               ],
+            ),
+            const SizedBox(height: 24),
+            Card(
+              elevation: 0,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: _serviceSuspended
+                            ? Colors.red.withOpacity(0.1)
+                            : Colors.green.withOpacity(0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        _serviceSuspended ? Icons.pause_circle_filled : Icons.play_circle_filled,
+                        color: _serviceSuspended ? Colors.red : Colors.green,
+                        size: 28,
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            "App Service Status",
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            _serviceSuspended
+                                ? "Service Suspended (Maintenance)"
+                                : "Service Active (Accepting Orders)",
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: _serviceSuspended ? Colors.redAccent : Colors.greenAccent,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Switch(
+                      value: !_serviceSuspended,
+                      activeColor: Colors.green,
+                      inactiveThumbColor: Colors.red,
+                      inactiveTrackColor: Colors.red.withOpacity(0.3),
+                      onChanged: (val) {
+                        _toggleServiceStatus(!val);
+                      },
+                    ),
+                  ],
+                ),
+              ),
             ),
           ],
         ),

@@ -5,9 +5,11 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:salomon_bottom_bar/salomon_bottom_bar.dart';
 
+import '../core/api_client.dart';
 import '../services/auth_service.dart';
 import '../services/notification_service.dart';
 import '../services/profile_service.dart';
+import 'maintenance_screen.dart';
 
 import 'product_list_screen.dart';
 import 'cart_screen.dart';
@@ -51,6 +53,9 @@ class _MainNavigationScreenState
   StreamSubscription?
   _unauthorizedSubscription;
 
+  StreamSubscription?
+  _maintenanceSubscription;
+
   Timer?
   _sessionCheckTimer;
 
@@ -85,6 +90,13 @@ class _MainNavigationScreenState
           _handleUnauthorized();
         });
 
+    _maintenanceSubscription =
+        ApiClient
+            .maintenanceStream
+            .listen((_) {
+          _handleMaintenance();
+        });
+
     // Periodically verify session by polling an authenticated endpoint (60s interval for cost optimization)
     _sessionCheckTimer = Timer.periodic(
       const Duration(seconds: 60),
@@ -99,6 +111,18 @@ class _MainNavigationScreenState
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkFirstTimeSetup();
     });
+  }
+
+  void _handleMaintenance() {
+    if (!mounted) return;
+    if (_isAdmin) return; // Admins are allowed to stay inside the dashboard
+
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(
+        builder: (context) => const MaintenanceScreen(),
+      ),
+      (route) => false,
+    );
   }
 
   void _handleUnauthorized() {
@@ -129,6 +153,7 @@ class _MainNavigationScreenState
 
     _notificationSubscription?.cancel();
     _unauthorizedSubscription?.cancel();
+    _maintenanceSubscription?.cancel();
     _sessionCheckTimer?.cancel();
 
     super.dispose();

@@ -451,15 +451,21 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
         itemBuilder: (context, index) {
           final user = _users[index];
 
-          return Card(
+          return Container(
+            margin: const EdgeInsets.symmetric(vertical: 4), // Slimmer margin
+            decoration: BoxDecoration(
+              color: const Color(0xFF1C1C1E), // iOS Grouped Background
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFF2C2C2E), width: 0.5),
+            ),
             child: ListTile(
-              contentPadding:
-              const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 8,
+              dense: true, // Reduces default height & padding to be slim
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 14,
+                vertical: 4,
               ),
-
               leading: CircleAvatar(
+                radius: 18, // Slimmer profile avatar
                 backgroundColor: const Color(0xFF0A84FF).withOpacity(0.12),
                 child: Text(
                   user.fullName.isNotEmpty
@@ -468,62 +474,78 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                   style: const TextStyle(
                     color: Color(0xFF0A84FF),
                     fontWeight: FontWeight.bold,
+                    fontSize: 14,
                   ),
                 ),
               ),
-
-              title: Text(
-                user.fullName,
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-
-              subtitle: Column(
-                crossAxisAlignment:
-                CrossAxisAlignment.start,
+              title: Row(
                 children: [
-                  const SizedBox(height: 4),
-
-                  Text(user.phoneNumber),
-
-                  if (user.email != null &&
-                      user.email!.isNotEmpty)
-                    Text(user.email!),
-
-                  const SizedBox(height: 4),
-
-                  Text(
-                    user.active
-                        ? "Active"
-                        : "Inactive",
-                    style: TextStyle(
-                      color: user.active
-                          ? Colors.green
-                          : Colors.red,
-                      fontSize: 12,
-                      fontWeight:
-                      FontWeight.w600,
+                  Expanded(
+                    child: Text(
+                      user.fullName,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 15,
+                        color: Colors.white,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  // Slim status badge
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: (user.active ? Colors.green : Colors.red).withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      user.active ? "Active" : "Inactive",
+                      style: TextStyle(
+                        color: user.active ? Colors.green : Colors.red,
+                        fontSize: 9,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ],
               ),
-
+              subtitle: Padding(
+                padding: const EdgeInsets.only(top: 2),
+                child: Text(
+                  user.phoneNumber + (user.email != null && user.email!.isNotEmpty ? "  •  ${user.email}" : ""),
+                  style: const TextStyle(
+                    color: Color(0xFF8E8E93),
+                    fontSize: 12,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
               trailing: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   IconButton(
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
                     tooltip: "Reset Password",
                     icon: const Icon(
                       Icons.lock_reset,
+                      color: Color(0xFF8E8E93),
+                      size: 22,
                     ),
                     onPressed: () =>
                         _showResetPasswordDialog(user),
                   ),
-                  Switch(
-                    value: user.active,
-                    activeColor: Colors.green,
-                    onChanged: (val) => _toggleUserStatus(user),
+                  const SizedBox(width: 12),
+                  Transform.scale(
+                    scale: 0.75, // Slim down the switch size
+                    child: Switch.adaptive(
+                      value: user.active,
+                      activeColor: Colors.green,
+                      onChanged: (val) => _toggleUserStatus(user),
+                    ),
                   ),
                 ],
               ),

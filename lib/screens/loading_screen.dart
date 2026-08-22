@@ -1,9 +1,13 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import '../core/api_client.dart';
 import '../services/auth_service.dart';
 import 'admin_dashboard_screen.dart';
 import 'login_screen.dart';
 import 'main_navigation_screen.dart';
+import 'maintenance_screen.dart';
 
 class LoadingScreen extends StatefulWidget {
   const LoadingScreen({super.key});
@@ -15,6 +19,20 @@ class LoadingScreen extends StatefulWidget {
 class _LoadingScreenState extends State<LoadingScreen> with SingleTickerProviderStateMixin {
   final AuthService _authService = AuthService();
   late AnimationController _animationController;
+  bool _serviceSuspended = false;
+  late Future<void> _statusCheckFuture;
+
+  Future<void> _checkServiceStatus() async {
+    try {
+      final response = await http.get(Uri.parse("${ApiClient.baseUrl}/api/service-status"));
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        _serviceSuspended = data["suspended"] ?? false;
+      }
+    } catch (e) {
+      debugPrint("Error checking service status: $e");
+    }
+  }
 
   // Premium iOS Transitions
   late Animation<double> _textOpacity;
@@ -25,6 +43,7 @@ class _LoadingScreenState extends State<LoadingScreen> with SingleTickerProvider
   @override
   void initState() {
     super.initState();
+    _statusCheckFuture = _checkServiceStatus();
 
     _animationController = AnimationController(
       vsync: this,
@@ -79,13 +98,19 @@ class _LoadingScreenState extends State<LoadingScreen> with SingleTickerProvider
     super.dispose();
   }
 
-  void _navigateToNext() {
+  void _navigateToNext() async {
+    if (!mounted) return;
+
+    // Await status check completion before navigating
+    await _statusCheckFuture;
+
     if (!mounted) return;
 
     final PageRouteBuilder routeBuilder = PageRouteBuilder(
       pageBuilder: (context, animation, secondaryAnimation) {
         if (!_authService.isLoggedIn) return const LoginScreen();
         if (_authService.isAdmin()) return const AdminDashboardScreen();
+        if (_serviceSuspended) return const MaintenanceScreen();
         return const MainNavigationScreen();
       },
       transitionsBuilder: (context, animation, secondaryAnimation, child) {
@@ -120,24 +145,38 @@ class _LoadingScreenState extends State<LoadingScreen> with SingleTickerProvider
                     child: Column(
                       children: [
                         Text(
-                          "Keep it Nu.",
+                          "KEEP IT NU.",
                           style: TextStyle(
                             fontFamily: '.SF Pro Display', // Force iOS native system font rendering
-                            fontSize: 20, // Final release scaled down font size
-                            fontWeight: FontWeight.w200, // Premium ultra-thin font weight
-                            letterSpacing: 2.5, // Expanded letter tracking
-                            color: Colors.white,
+                            fontSize: 18, // Balanced size for uppercase letter spacing
+                            fontWeight: FontWeight.w500, // Medium weight
+                            letterSpacing: 6.0, // Luxury tracking width
+                            color: const Color(0xFFE5E5EA), // Apple Silver-white for smooth contrast
+                            shadows: [
+                              Shadow(
+                                color: Colors.black.withOpacity(0.25),
+                                offset: const Offset(0, 2),
+                                blurRadius: 4,
+                              ),
+                            ],
                           ),
                         ),
-                        const SizedBox(height: 6),
-                        const Text(
-                          "Keep it Klean.",
+                        const SizedBox(height: 8),
+                        Text(
+                          "KEEP IT KLEAN.",
                           style: TextStyle(
                             fontFamily: '.SF Pro Display', // Force iOS native system font rendering
-                            fontSize: 20, // Final release scaled down font size
-                            fontWeight: FontWeight.w600, // Bold weight to create extreme design contrast
-                            letterSpacing: 2.5,
-                            color: Color(0xFF0A84FF), // iOS Brand Blue color
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800, // Extra bold weight to create high-end design contrast
+                            letterSpacing: 6.0, // Matching luxury tracking
+                            color: const Color(0xFF0A84FF), // iOS Brand Blue color
+                            shadows: [
+                              Shadow(
+                                color: const Color(0xFF0A84FF).withOpacity(0.15),
+                                offset: const Offset(0, 1),
+                                blurRadius: 6,
+                              ),
+                            ],
                           ),
                         ),
                       ],

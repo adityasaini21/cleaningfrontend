@@ -75,6 +75,68 @@ class AuthService {
     await prefs.remove("jwt_token");
   }
 
+  Future<Map<String, dynamic>?> verifyGoogleLogin(String idToken) async {
+    try {
+      final response = await ApiClient.post(
+        Uri.parse("$baseUrl/auth/google/login"),
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: jsonEncode({
+          "idToken": idToken,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final bool isNewUser = data["newUser"] ?? false;
+
+        if (!isNewUser && data["token"] != null) {
+          token = data["token"];
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString("jwt_token", token!);
+          await saveFcmToken();
+        }
+
+        return data;
+      }
+    } catch (e) {
+      print("GOOGLE VERIFY ERROR: $e");
+    }
+    return null;
+  }
+
+  Future<Map<String, dynamic>?> registerGoogleUser(String idToken, String phoneNumber) async {
+    try {
+      final response = await ApiClient.post(
+        Uri.parse("$baseUrl/auth/google/register"),
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: jsonEncode({
+          "idToken": idToken,
+          "phoneNumber": phoneNumber,
+        }),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final data = jsonDecode(response.body);
+
+        if (data["token"] != null) {
+          token = data["token"];
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString("jwt_token", token!);
+          await saveFcmToken();
+        }
+
+        return data;
+      }
+    } catch (e) {
+      print("GOOGLE REGISTER ERROR: $e");
+    }
+    return null;
+  }
+
   bool get isLoggedIn => token != null;
 
   String? getUsernameFromToken() {

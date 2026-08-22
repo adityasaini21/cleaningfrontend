@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../services/auth_service.dart';
@@ -5,6 +6,16 @@ import 'config/api_config.dart';
 
 class ApiClient {
   static String get baseUrl => ApiConfig.baseUrl;
+
+  static final StreamController<void> _maintenanceController =
+      StreamController<void>.broadcast();
+
+  static Stream<void> get maintenanceStream =>
+      _maintenanceController.stream;
+
+  static void triggerMaintenance() {
+    _maintenanceController.add(null);
+  }
 
   static Future<http.Response> get(Uri url, {Map<String, String>? headers}) async {
     final response = await http.get(url, headers: headers);
@@ -33,6 +44,8 @@ class ApiClient {
   static void _checkResponse(http.Response response) {
     if (response.statusCode == 401 || response.statusCode == 403) {
       AuthService.triggerUnauthorized();
+    } else if (response.statusCode == 503) {
+      _maintenanceController.add(null);
     }
   }
 }

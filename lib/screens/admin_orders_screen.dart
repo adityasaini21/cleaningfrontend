@@ -136,37 +136,36 @@ class _AdminOrdersScreenState
   // =====================================
 
   String _formatDate(DateTime date) {
-
-    return
-      "${date.day}/${date.month}/${date.year}";
+    final localDate = date.toLocal();
+    return "${localDate.day}/${localDate.month}/${localDate.year}";
   }
 
   bool _isToday(DateTime date) {
-
+    final localDate = date.toLocal();
     final now = DateTime.now();
 
-    return date.day == now.day &&
-        date.month == now.month &&
-        date.year == now.year;
+    return localDate.day == now.day &&
+        localDate.month == now.month &&
+        localDate.year == now.year;
   }
 
   bool _isThisWeek(DateTime date) {
-
+    final localDate = date.toLocal();
     final now = DateTime.now();
 
     final difference =
-        now.difference(date).inDays;
+        now.difference(localDate).inDays;
 
     return difference >= 0 &&
         difference < 7;
   }
 
   bool _isThisMonth(DateTime date) {
-
+    final localDate = date.toLocal();
     final now = DateTime.now();
 
-    return date.month == now.month &&
-        date.year == now.year;
+    return localDate.month == now.month &&
+        localDate.year == now.year;
   }
 
   @override

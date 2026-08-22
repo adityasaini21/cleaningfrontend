@@ -26,6 +26,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
 
+  bool _otpSent = false;
+  bool _otpVerified = false;
+  bool _sendingOtp = false;
+  final _otpController = TextEditingController();
+
   final String baseUrl = ApiClient.baseUrl;
 
   @override
@@ -34,11 +39,70 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _phoneController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
+    _otpController.dispose();
     super.dispose();
+  }
+
+  Future<void> _sendOtp() async {
+    final phone = _phoneController.text.trim();
+    if (phone.isEmpty || !RegExp(r'^[6-9]\d{9}$').hasMatch(phone)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please enter a valid 10-digit mobile number")),
+      );
+      return;
+    }
+
+    setState(() {
+      _sendingOtp = true;
+    });
+
+    try {
+      final response = await ApiClient.post(
+        Uri.parse("$baseUrl/auth/otp/send?phoneNumber=$phone"),
+        headers: {"Content-Type": "application/json"},
+      );
+
+      if (response.statusCode == 200) {
+        setState(() {
+          _otpSent = true;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("OTP sent successfully! Check your SMS or terminal logs.")),
+        );
+      } else {
+        String errorMsg = "Failed to send OTP";
+        try {
+          final data = jsonDecode(response.body);
+          if (data is Map && data.containsKey("error")) {
+            errorMsg = data["error"].toString();
+          }
+        } catch (_) {}
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(errorMsg)),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Error connecting to server")),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _sendingOtp = false;
+        });
+      }
+    }
   }
 
   Future<void> registerUser() async {
     if (_loading) return;
+
+    if (!_otpSent) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please request and enter the OTP first.")),
+      );
+      return;
+    }
 
     if (!_formKey.currentState!.validate()) {
       return;
@@ -51,6 +115,25 @@ class _RegisterScreenState extends State<RegisterScreen> {
     });
 
     try {
+      final phone = _phoneController.text.trim();
+      final otpCode = _otpController.text.trim();
+
+      // 1. Verify OTP first
+      if (!_otpVerified) {
+        final otpResponse = await ApiClient.post(
+          Uri.parse("$baseUrl/auth/otp/verify?phoneNumber=$phone&otp=$otpCode"),
+          headers: {"Content-Type": "application/json"},
+        );
+
+        if (otpResponse.statusCode != 200) {
+          final errData = jsonDecode(otpResponse.body);
+          throw Exception(errData["error"] ?? "OTP verification failed");
+        }
+
+        _otpVerified = true;
+      }
+
+      // 2. Perform actual registration
       final response = await ApiClient.post(
         Uri.parse("$baseUrl/auth/register"),
         headers: {
@@ -58,7 +141,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         },
         body: jsonEncode({
           "fullName": _fullNameController.text.trim(),
-          "phoneNumber": _phoneController.text.trim(),
+          "phoneNumber": phone,
           "password": _passwordController.text,
         }),
       );
@@ -100,13 +183,25 @@ class _RegisterScreenState extends State<RegisterScreen> {
           );
         }
       } else {
+        String errorMessage = "Registration failed";
+        try {
+          final errorData = jsonDecode(response.body);
+          if (errorData is Map && errorData.containsKey("message")) {
+            errorMessage = errorData["message"].toString();
+          } else {
+            errorMessage = response.body.trim().isNotEmpty
+                ? response.body.trim()
+                : "Registration failed";
+          }
+        } catch (_) {
+          errorMessage = response.body.trim().isNotEmpty
+              ? response.body.trim()
+              : "Registration failed";
+        }
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              response.body.trim().isNotEmpty
-                  ? response.body.trim()
-                  : "Registration failed",
-            ),
+            content: Text(errorMessage),
             backgroundColor: Colors.redAccent,
           ),
         );
@@ -289,11 +384,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               textInputAction: TextInputAction.next,
                               maxLength: 10,
                               style: const TextStyle(fontSize: 16),
-                              decoration: const InputDecoration(
+                              decoration: InputDecoration(
                                 labelText: "Phone Number",
-                                labelStyle: TextStyle(color: Color(0xFF8E8E93)),
+                                labelStyle: const TextStyle(color: Color(0xFF8E8E93)),
                                 hintText: "10-digit mobile number",
-                                prefixIcon: Icon(Icons.phone, color: Color(0xFF8E8E93), size: 22),
+                                prefixIcon: const Icon(Icons.phone, color: Color(0xFF8E8E93), size: 22),
                                 counterText: "",
                                 border: InputBorder.none,
                                 enabledBorder: InputBorder.none,
@@ -301,6 +396,34 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 errorBorder: InputBorder.none,
                                 disabledBorder: InputBorder.none,
                                 filled: false,
+                                suffixIcon: _sendingOtp
+                                    ? const Padding(
+                                        padding: EdgeInsets.all(12),
+                                        child: SizedBox(
+                                          width: 20,
+                                          height: 20,
+                                          child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF0A84FF)),
+                                        ),
+                                      )
+                                    : TextButton(
+                                        onPressed: _sendOtp,
+                                        style: TextButton.styleFrom(
+                                          padding: EdgeInsets.zero,
+                                          minimumSize: const Size(0, 0),
+                                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                        ),
+                                        child: Padding(
+                                          padding: const EdgeInsets.only(right: 16),
+                                          child: Text(
+                                            _otpSent ? "Resend" : "Send OTP",
+                                            style: const TextStyle(
+                                              color: Color(0xFF0A84FF),
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 14,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
                               ),
                               validator: (value) {
                                 final phone = value?.trim() ?? "";
@@ -317,6 +440,49 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               },
                             ),
                           ),
+
+                          if (_otpSent) ...[
+                            const Divider(
+                              height: 1,
+                              thickness: 0.5,
+                              color: Color(0xFF38383A), // iOS cell divider
+                              indent: 16,
+                              endIndent: 16,
+                            ),
+                            // OTP VERIFICATION FIELD
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                              child: TextFormField(
+                                controller: _otpController,
+                                keyboardType: TextInputType.number,
+                                maxLength: 6,
+                                style: const TextStyle(fontSize: 16),
+                                decoration: const InputDecoration(
+                                  labelText: "Verification OTP",
+                                  labelStyle: TextStyle(color: Color(0xFF8E8E93)),
+                                  hintText: "Enter 6-digit OTP",
+                                  prefixIcon: Icon(Icons.security_outlined, color: Color(0xFF8E8E93), size: 22),
+                                  counterText: "",
+                                  border: InputBorder.none,
+                                  enabledBorder: InputBorder.none,
+                                  focusedBorder: InputBorder.none,
+                                  errorBorder: InputBorder.none,
+                                  disabledBorder: InputBorder.none,
+                                  filled: false,
+                                ),
+                                validator: (value) {
+                                  final code = value?.trim() ?? "";
+                                  if (code.isEmpty) {
+                                    return "Please enter the verification OTP";
+                                  }
+                                  if (code.length != 6) {
+                                    return "OTP must be 6 digits";
+                                  }
+                                  return null;
+                                },
+                              ),
+                            ),
+                          ],
 
                           const Divider(
                             height: 1,
