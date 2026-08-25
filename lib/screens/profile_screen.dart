@@ -415,6 +415,80 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  Future<void> _showDeleteAccountConfirmation(BuildContext context, AuthService authService) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF1C1C1E),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: const BorderSide(color: Color(0xFF2C2C2E), width: 0.5),
+          ),
+          title: const Text(
+            "Delete Account",
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          ),
+          content: const Text(
+            "Are you absolutely sure you want to delete your account? This action will permanently erase your personal profile data and cannot be undone.",
+            style: TextStyle(color: Color(0xFF8E8E93)),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text(
+                "Cancel",
+                style: TextStyle(color: Color(0xFF0A84FF)),
+              ),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text(
+                "Delete",
+                style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed == true) {
+      setState(() {
+        _isLoading = true;
+      });
+
+      final success = await _profileService.deleteAccount();
+
+      setState(() {
+        _isLoading = false;
+      });
+
+      if (success) {
+        await authService.logout();
+        if (!context.mounted) return;
+        Provider.of<CartProvider>(context, listen: false).clearCart();
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Account successfully deleted")),
+        );
+
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const LoginScreen(),
+          ),
+          (route) => false,
+        );
+      } else {
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Failed to delete account. Please try again.")),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final fullName = _fullNameController.text;
@@ -661,7 +735,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                       const SizedBox(height: 16),
 
-                      // Logout Card
+                      // Actions Card Group
                       _buildSettingsGroup([
                         ListTile(
                           leading: const Icon(Icons.logout, color: Colors.redAccent),
@@ -673,6 +747,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             ),
                           ),
                           onTap: () => _showLogoutConfirmation(context, _authService),
+                        ),
+                        const Divider(color: Color(0xFF2C2C2E), height: 0.5, indent: 56),
+                        ListTile(
+                          leading: const Icon(Icons.delete_forever, color: Colors.red),
+                          title: const Text(
+                            "Delete Account",
+                            style: TextStyle(
+                              color: Colors.red,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          onTap: () => _showDeleteAccountConfirmation(context, _authService),
                         ),
                       ]),
 

@@ -64,4 +64,18 @@ class ProfileService {
       return e.toString();
     }
   }
+
+  Future<bool> deleteAccount() async {
+    try {
+      final response = await ApiClient.delete(
+        Uri.parse("$baseUrl/auth/delete-account"),
+        headers: _headers,
+      );
+
+      return response.statusCode == 200;
+    } catch (e) {
+      print("ERROR DELETING ACCOUNT: $e");
+      return false;
+    }
+  }
 }

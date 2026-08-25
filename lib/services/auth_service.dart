@@ -49,7 +49,7 @@ class AuthService {
         token!,
       );
 
-      print("LOGIN TOKEN: $token");
+      print("JWT token stored successfully");
 
       await saveFcmToken();
 
@@ -64,7 +64,7 @@ class AuthService {
 
     token = prefs.getString("jwt_token");
 
-    print("LOADED TOKEN: $token");
+    print("JWT token loaded successfully");
   }
 
   Future<void> logout() async {

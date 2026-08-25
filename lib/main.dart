@@ -63,13 +63,13 @@ void main() async {
   // Load JWT Token
   await AuthService.loadToken();
 
-  print("APP START TOKEN: ${AuthService.token}");
+  debugPrint("JWT Token loaded successfully");
 
   // Get FCM Token
   String? fcmToken =
   await FirebaseMessaging.instance.getToken();
 
-  print("FCM TOKEN: $fcmToken");
+  debugPrint("FCM token initialized");
 
   // Save Token To Backend
   if (fcmToken != null &&
