@@ -45,32 +45,6 @@ class AdminUserService {
     throw Exception("Failed to load users");
   }
 
-  Future<void> resetPassword(
-      int userId,
-      String newPassword,
-      ) async {
-    final response = await ApiClient.put(
-      Uri.parse(
-        "$baseUrl/admin/users/$userId/reset-password",
-      ),
-      headers: headers,
-      body: jsonEncode({
-        "newPassword": newPassword,
-      }),
-    );
-
-    print("RESET PASSWORD STATUS: ${response.statusCode}");
-    print("RESET PASSWORD BODY: ${response.body}");
-
-    if (response.statusCode != 200) {
-      throw Exception(
-        response.body.isNotEmpty
-            ? response.body
-            : "Failed to reset password",
-      );
-    }
-  }
-
   Future<AdminUser> toggleUserStatus(int userId) async {
     final response = await ApiClient.put(
       Uri.parse(
