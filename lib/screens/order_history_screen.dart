@@ -607,6 +607,53 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
           final orders =
           snapshot.data!.reversed.toList();
 
+          if (orders.isEmpty) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: Colors.green.withOpacity(0.05),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: Colors.green.withOpacity(0.15),
+                          width: 1.5,
+                        ),
+                      ),
+                      child: const Icon(
+                        Icons.shopping_bag_outlined,
+                        size: 56,
+                        color: Colors.green,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    const Text(
+                      "No Orders Yet",
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      "Your order history is empty. Go back and place your first order now!",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }
+
           return ListView.builder(
 
             itemCount: orders.length,
