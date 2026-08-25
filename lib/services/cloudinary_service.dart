@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:cloudinary_public/cloudinary_public.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class CloudinaryService {
 
@@ -8,9 +9,11 @@ class CloudinaryService {
   // 🔥 YOUR CLOUDINARY DETAILS
   // =========================================
 
-  final cloudinary = CloudinaryPublic(
-    'dxfph9w2w',
-    'premChemicals',
+  final CloudinaryPublic cloudinary;
+
+  CloudinaryService() : cloudinary = CloudinaryPublic(
+    dotenv.env['CLOUDINARY_CLOUD_NAME'] ?? '',
+    dotenv.env['CLOUDINARY_UPLOAD_PRESET'] ?? '',
     cache: false,
   );
 
