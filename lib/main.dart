@@ -113,9 +113,12 @@ void main() async {
     },
   );
 
+  final cartProvider = CartProvider();
+  await cartProvider.loadCart();
+
   runApp(
-    ChangeNotifierProvider(
-      create: (_) => CartProvider(),
+    ChangeNotifierProvider.value(
+      value: cartProvider,
       child: const PremChemicalsApp(),
     ),
   );

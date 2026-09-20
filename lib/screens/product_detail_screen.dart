@@ -794,50 +794,73 @@ class _ProductDetailScreenState
       // =====================================
 
       bottomNavigationBar:
-
       !_isAdmin
-
           ? Padding(
-
         padding:
         const EdgeInsets.all(16),
-
         child: SizedBox(
-
           height: 50,
-
-          child: ElevatedButton(
-
-            onPressed: () {
-
-              context
-                  .read<CartProvider>()
-                  .addToCart(
-                  widget.product);
-
-              ScaffoldMessenger.of(
-                  context)
-                  .showSnackBar(
-
-                SnackBar(
-                  content: Text(
-                    "${widget.product.name} added to cart",
+          child: cart.getProductQuantity(widget.product.id) > 0
+              ? Container(
+                  height: 50,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0A84FF),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.remove, color: Colors.white),
+                        onPressed: () {
+                          cart.decreaseQuantity(widget.product.id);
+                        },
+                      ),
+                      Text(
+                        "${cart.getProductQuantity(widget.product.id)} in Cart",
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.add, color: Colors.white),
+                        onPressed: () {
+                          cart.increaseQuantity(widget.product.id);
+                        },
+                      ),
+                    ],
+                  ),
+                )
+              : ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF0A84FF),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  onPressed: () {
+                    cart.addToCart(widget.product);
+                  },
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.shopping_cart_outlined, color: Colors.white),
+                      SizedBox(width: 8),
+                      Text(
+                        "Add to Cart",
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              );
-            },
-
-            child: const Text(
-
-              "Add to Cart",
-
-              style: TextStyle(
-                  fontSize: 16),
-            ),
-          ),
         ),
       )
-
           : null,
 
       // =====================================

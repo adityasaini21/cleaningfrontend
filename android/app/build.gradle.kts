@@ -80,7 +80,7 @@ android {
 
             signingConfig =
                 signingConfigs.getByName(
-                    "debug"
+                    "release"
                 )
         }
     }

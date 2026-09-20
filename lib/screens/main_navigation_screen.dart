@@ -3,10 +3,12 @@ import 'dart:convert';
 
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:salomon_bottom_bar/salomon_bottom_bar.dart';
 
 import '../core/api_client.dart';
 import '../services/auth_service.dart';
+import '../services/cart_provider.dart';
 import '../services/notification_service.dart';
 import '../services/profile_service.dart';
 import 'maintenance_screen.dart';
@@ -375,9 +377,59 @@ class _MainNavigationScreenState
     );
   }
 
+  Widget _cartIcon(int cartCount) {
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        const Icon(Icons.shopping_bag),
+        if (cartCount > 0)
+          Positioned(
+            right: -6,
+            top: -6,
+            child: Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 5,
+                vertical: 2,
+              ),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [
+                    Color(0xFF10B981),
+                    Color(0xFF059669),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF10B981).withOpacity(0.4),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              constraints: const BoxConstraints(
+                minWidth: 18,
+                minHeight: 18,
+              ),
+              child: Text(
+                cartCount > 99 ? "99+" : cartCount.toString(),
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
+    final cart = context.watch<CartProvider>();
+    final cartCount = cart.totalItemCount;
 
     final userScreens = [
       ProductListScreen(
@@ -405,31 +457,16 @@ class _MainNavigationScreenState
       ),
     ];
 
-
-
-
-
-
     final userItems = [
-
       SalomonBottomBarItem(
-
         icon: const Icon(Icons.storefront),
-
         title: const Text("Products"),
-
-        selectedColor:
-        const Color(0xFF4F46E5),
+        selectedColor: const Color(0xFF4F46E5),
       ),
-
       SalomonBottomBarItem(
-
-        icon: const Icon(Icons.shopping_bag),
-
+        icon: _cartIcon(cartCount),
         title: const Text("Cart"),
-
-        selectedColor:
-        const Color(0xFF10B981),
+        selectedColor: const Color(0xFF10B981),
       ),
 
       SalomonBottomBarItem(

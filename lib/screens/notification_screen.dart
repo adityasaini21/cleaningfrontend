@@ -171,15 +171,118 @@ class _NotificationScreenState
     });
   }
 
+  void _showClearAllConfirmationDialog() {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: const Color(0xFF1C1C1E),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: Color(0xFF2C2C2E), width: 0.5),
+        ),
+        title: const Text(
+          "Clear All Alerts",
+          style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+        ),
+        content: const Text(
+          "Are you sure you want to delete all notifications? This cannot be undone.",
+          style: TextStyle(color: Color(0xFF8E8E93), fontSize: 13),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text("Cancel", style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFFF453A),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            onPressed: () async {
+              Navigator.pop(dialogContext);
+              await _clearAllNotifications();
+            },
+            child: const Text(
+              "Clear All",
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _clearAllNotifications() async {
+    final previousList = List<NotificationModel>.from(_notifications);
+    setState(() {
+      _notifications.clear();
+    });
+
+    try {
+      final success = await _notificationService.clearAllNotifications();
+      if (!success) throw Exception();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text(
+              "All alerts cleared successfully",
+              style: TextStyle(color: Colors.white),
+            ),
+            backgroundColor: const Color(0xFF1C1C1E),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+              side: const BorderSide(color: Color(0xFF2C2C2E), width: 0.5),
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint("Clear all notifications error: $e");
+      if (mounted) {
+        setState(() {
+          _notifications = previousList;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Failed to clear alerts from server. Reverted."),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
 
     return Scaffold(
 
       appBar: AppBar(
-
-        title:
-        const Text("Notifications"),
+        title: const Text("Notifications"),
+        actions: [
+          if (_notifications.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: TextButton.icon(
+                onPressed: _showClearAllConfirmationDialog,
+                icon: const Icon(
+                  Icons.delete_sweep_outlined,
+                  size: 18,
+                  color: Color(0xFFFF453A),
+                ),
+                label: const Text(
+                  "Clear All",
+                  style: TextStyle(
+                    color: Color(0xFFFF453A),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
 
       body: _loading

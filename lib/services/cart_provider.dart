@@ -1,12 +1,55 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/cart_item.dart';
 import '../models/product.dart';
 
 class CartProvider with ChangeNotifier {
+  static const String _cartStorageKey = "SAVED_CART_ITEMS_V1";
 
   final List<CartItem> _items = [];
 
+  CartProvider() {
+    loadCart();
+  }
+
   List<CartItem> get items => _items;
+
+  // =========================
+  // PERSISTENCE METHODS
+  // =========================
+  Future<void> loadCart() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final cartJsonString = prefs.getString(_cartStorageKey);
+      if (cartJsonString != null && cartJsonString.isNotEmpty) {
+        final List<dynamic> decodedList = jsonDecode(cartJsonString);
+        _items.clear();
+        for (final item in decodedList) {
+          try {
+            if (item is Map) {
+              _items.add(CartItem.fromJson(item));
+            }
+          } catch (e) {
+            debugPrint("Cart item parse error: $e");
+          }
+        }
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint("Load cart from storage error: $e");
+    }
+  }
+
+  Future<void> _saveCartToStorage() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final cartJsonList = _items.map((item) => item.toJson()).toList();
+      await prefs.setString(_cartStorageKey, jsonEncode(cartJsonList));
+    } catch (e) {
+      debugPrint("Save cart to storage error: $e");
+    }
+  }
 
   // =========================
   // ADD TO CART
@@ -22,6 +65,7 @@ class CartProvider with ChangeNotifier {
       _items.add(CartItem(product: product));
     }
 
+    _saveCartToStorage();
     notifyListeners();
   }
 
@@ -44,6 +88,7 @@ class CartProvider with ChangeNotifier {
       _items.add(cartItem);
     }
 
+    _saveCartToStorage();
     notifyListeners();
   }
 
@@ -54,6 +99,7 @@ class CartProvider with ChangeNotifier {
 
     _items.removeWhere((item) => item.product.id == productId);
 
+    _saveCartToStorage();
     notifyListeners();
   }
 
@@ -75,6 +121,7 @@ class CartProvider with ChangeNotifier {
 
     _items.clear();
 
+    _saveCartToStorage();
     notifyListeners();
   }
 
@@ -88,6 +135,7 @@ class CartProvider with ChangeNotifier {
 
     if (index >= 0) {
       _items[index].quantity++;
+      _saveCartToStorage();
       notifyListeners();
     }
   }
@@ -108,7 +156,26 @@ class CartProvider with ChangeNotifier {
         _items.removeAt(index);
       }
 
+      _saveCartToStorage();
       notifyListeners();
     }
+  }
+
+  // =========================
+  // GET QUANTITY BY PRODUCT ID
+  // =========================
+  int getProductQuantity(int productId) {
+    final index = _items.indexWhere((item) => item.product.id == productId);
+    if (index >= 0) {
+      return _items[index].quantity;
+    }
+    return 0;
+  }
+
+  // =========================
+  // TOTAL ITEM COUNT
+  // =========================
+  int get totalItemCount {
+    return _items.fold(0, (sum, item) => sum + item.quantity);
   }
 }

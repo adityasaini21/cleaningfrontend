@@ -91,13 +91,19 @@ class OrderModel {
       deliveryBoyPhone:
       json['deliveryBoyPhone'] ?? "",
 
-      createdAt: json['createdAt'] != null
-          ? DateTime.parse(json['createdAt'])
-          : DateTime.now(),
-
+      createdAt: _parseDateTime(json['createdAt']),
       items: (json['items'] as List? ?? [])
           .map((e) => OrderItemModel.fromJson(e))
           .toList(),
     );
+  }
+
+  static DateTime _parseDateTime(dynamic raw) {
+    if (raw == null) return DateTime.now();
+    final str = raw.toString();
+    if (str.contains('Z') || str.contains('+') || (str.length > 19 && str.substring(19).contains('-'))) {
+      return DateTime.parse(str).toLocal();
+    }
+    return DateTime.parse('${str}Z').toLocal();
   }
 }

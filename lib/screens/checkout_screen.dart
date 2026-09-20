@@ -457,58 +457,49 @@ class _CheckoutScreenState
 
           children: [
             _buildProfileImportCard(),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
 
             // =====================================
             // ADDRESS
             // =====================================
 
             _sectionCard(
-
               child: Column(
-
                 crossAxisAlignment:
                 CrossAxisAlignment.start,
-
                 children: [
-
                   const Row(
-
                     children: [
-
                       Icon(
                         Icons.location_on,
+                        size: 18,
+                        color: Color(0xFF0A84FF),
                       ),
-
-                      SizedBox(width: 8),
-
+                      SizedBox(width: 6),
                       Text(
-
                         "Shipping Address",
-
                         style: TextStyle(
-
-                          fontSize: 16,
-
+                          fontSize: 14,
                           fontWeight:
                           FontWeight.bold,
                         ),
                       ),
                     ],
                   ),
-
-                  const SizedBox(height: 14),
-
+                  const SizedBox(height: 8),
                   TextField(
                     controller: _addressController,
-                    maxLines: 3,
+                    minLines: 1,
+                    maxLines: 2,
                     readOnly: true,
-                    style: const TextStyle(color: Color(0xFF8E8E93)),
+                    style: const TextStyle(color: Color(0xFF8E8E93), fontSize: 13),
                     decoration: InputDecoration(
+                      isDense: true,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                       hintText: "Autofilled from your profile",
-                      hintStyle: const TextStyle(color: Color(0xFF8E8E93)),
+                      hintStyle: const TextStyle(color: Color(0xFF8E8E93), fontSize: 13),
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
+                        borderRadius: BorderRadius.circular(10),
                       ),
                     ),
                   ),
@@ -516,7 +507,7 @@ class _CheckoutScreenState
               ),
             ),
 
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
 
             // =====================================
             // CONTACT INFO
@@ -532,30 +523,34 @@ class _CheckoutScreenState
                     controller: _phoneController,
                     keyboardType: TextInputType.phone,
                     readOnly: true,
-                    style: const TextStyle(color: Color(0xFF8E8E93)),
+                    style: const TextStyle(color: Color(0xFF8E8E93), fontSize: 13),
                     decoration: InputDecoration(
+                      isDense: true,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                       labelText: "Phone Number",
-                      labelStyle: const TextStyle(color: Color(0xFF8E8E93)),
-                      prefixIcon: const Icon(Icons.phone, color: Color(0xFF8E8E93)),
+                      labelStyle: const TextStyle(color: Color(0xFF8E8E93), fontSize: 13),
+                      prefixIcon: const Icon(Icons.phone, color: Color(0xFF8E8E93), size: 18),
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
+                        borderRadius: BorderRadius.circular(10),
                       ),
                     ),
                   ),
 
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 10),
 
                   TextField(
                     controller: _pincodeController,
                     keyboardType: TextInputType.number,
                     readOnly: true,
-                    style: const TextStyle(color: Color(0xFF8E8E93)),
+                    style: const TextStyle(color: Color(0xFF8E8E93), fontSize: 13),
                     decoration: InputDecoration(
+                      isDense: true,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                       labelText: "Pincode",
-                      labelStyle: const TextStyle(color: Color(0xFF8E8E93)),
-                      prefixIcon: const Icon(Icons.pin_drop, color: Color(0xFF8E8E93)),
+                      labelStyle: const TextStyle(color: Color(0xFF8E8E93), fontSize: 13),
+                      prefixIcon: const Icon(Icons.pin_drop, color: Color(0xFF8E8E93), size: 18),
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
+                        borderRadius: BorderRadius.circular(10),
                       ),
                     ),
                   ),

@@ -133,6 +133,27 @@ class NotificationService {
   }
 
   // =========================================
+  // CLEAR ALL NOTIFICATIONS
+  // =========================================
+
+  Future<bool> clearAllNotifications() async {
+    final response = await ApiClient.delete(
+      Uri.parse(
+        "$baseUrl/api/notifications/clear-all",
+      ),
+      headers: {
+        "Authorization": "Bearer ${AuthService.token}",
+      },
+    );
+
+    if (response.statusCode == 200) {
+      notifyNotificationReceived();
+      return true;
+    }
+    return false;
+  }
+
+  // =========================================
   // GET UNREAD COUNT
   // =========================================
 

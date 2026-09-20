@@ -48,47 +48,35 @@ class Product {
     required this.reviewCount,
   });
 
-  factory Product.fromJson(
-      Map<String, dynamic> json) {
-
+  factory Product.fromJson(Map<dynamic, dynamic> json) {
     return Product(
-
-      id: json['id'],
-
-      name: json['name'],
-
-      description:
-      json['description'] ?? '',
-
-      price:
-      (json['price'] as num)
-          .toDouble(),
-
-      costPrice:
-      (json['costPrice'] as num?)
-          ?.toDouble() ??
-          0.0,
-
-      stock: json['stock'],
-
-      imageUrl:
-      json['imageUrl'] ?? '',
-
-      categoryId:
-      json['categoryId'],
-
-      categoryName:
-      json['categoryName'] ?? '',
-
-      // ⭐ NEW
-
-      averageRating:
-      (json['averageRating'] as num?)
-          ?.toDouble() ??
-          0.0,
-
-      reviewCount:
-      json['reviewCount'] ?? 0,
+      id: (json['id'] as num?)?.toInt() ?? 0,
+      name: json['name']?.toString() ?? '',
+      description: json['description']?.toString() ?? '',
+      price: (json['price'] as num?)?.toDouble() ?? 0.0,
+      costPrice: (json['costPrice'] as num?)?.toDouble() ?? 0.0,
+      stock: (json['stock'] as num?)?.toInt() ?? 0,
+      imageUrl: json['imageUrl']?.toString() ?? '',
+      categoryId: (json['categoryId'] as num?)?.toInt() ?? 0,
+      categoryName: json['categoryName']?.toString() ?? '',
+      averageRating: (json['averageRating'] as num?)?.toDouble() ?? 0.0,
+      reviewCount: (json['reviewCount'] as num?)?.toInt() ?? 0,
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'description': description,
+      'price': price,
+      'costPrice': costPrice,
+      'stock': stock,
+      'imageUrl': imageUrl,
+      'categoryId': categoryId,
+      'categoryName': categoryName,
+      'averageRating': averageRating,
+      'reviewCount': reviewCount,
+    };
   }
 }

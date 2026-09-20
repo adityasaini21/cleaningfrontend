@@ -37,6 +37,8 @@ class _ProductListScreenState
   final ProductService _service =
   ProductService();
 
+  final TextEditingController _searchController = TextEditingController();
+
   List<Product> _products = [];
 
   List<Product> _allProducts = [];
@@ -57,6 +59,32 @@ class _ProductListScreenState
     _checkAdmin();
 
     _initializeData();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _applySearchFilter() {
+    final query = _searchController.text.trim().toLowerCase();
+    if (query.isEmpty) {
+      _products = List.from(_allProducts);
+    } else {
+      _products = _allProducts.where((p) {
+        final nameMatch = p.name.toLowerCase().contains(query);
+        final descMatch = p.description.toLowerCase().contains(query);
+        final categoryMatch = p.categoryName.toLowerCase().contains(query);
+        return nameMatch || descMatch || categoryMatch;
+      }).toList();
+    }
+  }
+
+  void _onSearchChanged(String query) {
+    setState(() {
+      _applySearchFilter();
+    });
   }
 
   // =========================================
@@ -136,11 +164,8 @@ class _ProductListScreenState
       }
 
       setState(() {
-
-        _products = products;
-
         _allProducts = products;
-
+        _applySearchFilter();
         _isLoading = false;
       });
 
@@ -213,11 +238,8 @@ class _ProductListScreenState
         if (!mounted) return;
 
         setState(() {
-
-          _products = products;
-
           _allProducts = products;
-
+          _applySearchFilter();
           _isLoading = false;
         });
 
@@ -231,11 +253,8 @@ class _ProductListScreenState
         if (!mounted) return;
 
         setState(() {
-
-          _products = filtered;
-
           _allProducts = filtered;
-
+          _applySearchFilter();
           _isLoading = false;
         });
       }
@@ -538,7 +557,8 @@ class _ProductListScreenState
   }
 
   Widget _buildProductCard(Product p, int index) {
-    final cart = context.read<CartProvider>();
+    final cart = context.watch<CartProvider>();
+    final quantity = cart.getProductQuantity(p.id);
     final volume = _getProductVolume(p);
     final unitSuffix = _getProductUnitSuffix(p);
     
@@ -721,6 +741,50 @@ class _ProductListScreenState
                   ),
                 ],
               )
+            else if (quantity > 0)
+              Container(
+                width: double.infinity,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF0A84FF),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        borderRadius: const BorderRadius.horizontal(left: Radius.circular(10)),
+                        onTap: () => cart.decreaseQuantity(p.id),
+                        child: const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                          child: Icon(Icons.remove, color: Colors.white, size: 16),
+                        ),
+                      ),
+                    ),
+                    Text(
+                      "$quantity",
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                    Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        borderRadius: const BorderRadius.horizontal(right: Radius.circular(10)),
+                        onTap: () => cart.increaseQuantity(p.id),
+                        child: const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                          child: Icon(Icons.add, color: Colors.white, size: 16),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              )
             else
               SizedBox(
                 width: double.infinity,
@@ -735,9 +799,6 @@ class _ProductListScreenState
                   ),
                   onPressed: () {
                     cart.addToCart(p);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text("${p.name} added to cart")),
-                    );
                   },
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -903,7 +964,7 @@ class _ProductListScreenState
                 icon: const Icon(Icons.shopping_cart_outlined),
                 onPressed: widget.onCartTap,
               ),
-              if (cart.items.isNotEmpty)
+              if (cart.totalItemCount > 0)
                 Positioned(
                   right: 4,
                   top: 4,
@@ -918,7 +979,9 @@ class _ProductListScreenState
                       minHeight: 16,
                     ),
                     child: Text(
-                      cart.items.length.toString(),
+                      cart.totalItemCount > 99
+                          ? "99+"
+                          : cart.totalItemCount.toString(),
                       textAlign: TextAlign.center,
                       style: const TextStyle(
                         color: Colors.white,
@@ -936,66 +999,43 @@ class _ProductListScreenState
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Search Bar row
+          // Search Bar
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Container(
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF1C1C1E),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: const Color(0xFF2C2C2E),
-                        width: 0.5,
-                      ),
-                    ),
-                    child: TextField(
-                      style: const TextStyle(color: Colors.white, fontSize: 14),
-                      decoration: const InputDecoration(
-                        prefixIcon: Icon(Icons.search, color: Color(0xFF8E8E93), size: 20),
-                        hintText: "Search chemicals, cleaners...",
-                        hintStyle: TextStyle(color: Color(0xFF8E8E93), fontSize: 14),
-                        border: InputBorder.none,
-                        enabledBorder: InputBorder.none,
-                        focusedBorder: InputBorder.none,
-                        filled: false,
-                        contentPadding: EdgeInsets.symmetric(vertical: 12),
-                      ),
-                      onTap: () {
-                        showSearch(
-                          context: context,
-                          delegate: ProductSearchDelegate(
-                            products: _allProducts,
-                          ),
-                        );
-                      },
-                      readOnly: true,
-                    ),
-                  ),
+            child: Container(
+              height: 48,
+              decoration: BoxDecoration(
+                color: const Color(0xFF1C1C1E),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: const Color(0xFF2C2C2E),
+                  width: 0.5,
                 ),
-                const SizedBox(width: 12),
-                Container(
-                  height: 48,
-                  width: 48,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF1C1C1E),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: const Color(0xFF2C2C2E),
-                      width: 0.5,
-                    ),
-                  ),
-                  child: IconButton(
-                    icon: const Icon(Icons.tune_outlined, color: Colors.white, size: 20),
-                    onPressed: () {
-                      _filterProducts(null);
-                    },
-                  ),
+              ),
+              child: TextField(
+                controller: _searchController,
+                onChanged: _onSearchChanged,
+                style: const TextStyle(color: Colors.white, fontSize: 14),
+                decoration: InputDecoration(
+                  prefixIcon: const Icon(Icons.search, color: Color(0xFF8E8E93), size: 20),
+                  suffixIcon: _searchController.text.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear, color: Color(0xFF8E8E93), size: 18),
+                          onPressed: () {
+                            _searchController.clear();
+                            _onSearchChanged("");
+                          },
+                        )
+                      : null,
+                  hintText: "Search chemicals, cleaners...",
+                  hintStyle: const TextStyle(color: Color(0xFF8E8E93), fontSize: 14),
+                  border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                  filled: false,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 12),
                 ),
-              ],
+              ),
             ),
           ),
           

@@ -434,44 +434,23 @@ class CartScreen extends StatelessWidget {
               const SizedBox(height: 6),
 
               Row(
-
                 mainAxisAlignment:
                 MainAxisAlignment.spaceBetween,
-
                 children: [
-
                   Text(
-
-                    "Delivery",
-
+                    "Delivery Fee",
                     style: TextStyle(
-
                       fontSize: 13,
-
                       color: Colors.grey.shade400,
                     ),
                   ),
-
-                  Row(
-                    children: [
-                      Text(
-                        "₹30.00",
-                        style: TextStyle(
-                          color: Colors.grey.shade400,
-                          fontSize: 13,
-                          decoration: TextDecoration.lineThrough,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        "FREE",
-                        style: TextStyle(
-                          color: Colors.green.shade400,
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
+                  const Text(
+                    "Calculated in next step",
+                    style: TextStyle(
+                      color: Color(0xFF0A84FF),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ],
               ),
