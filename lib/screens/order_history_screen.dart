@@ -6,7 +6,6 @@ import '../models/order.dart';
 import '../models/product.dart';
 import '../services/order_history_service.dart';
 import '../services/cart_provider.dart';
-import 'dart:async';
 import '../services/notification_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -245,35 +244,6 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
     return
       "${min.toString().padLeft(2, '0')}:"
           "${sec.toString().padLeft(2, '0')}";
-  }
-
-  // ====================================
-  // ETA
-  // ====================================
-  Duration _remainingDeliveryTime(OrderModel order) {
-
-    final estimatedDeliveryTime =
-    order.createdAt.add(
-      const Duration(minutes: 30),
-    );
-
-    final remaining =
-    estimatedDeliveryTime.difference(_now);
-
-    return remaining.isNegative
-        ? Duration.zero
-        : remaining;
-  }
-
-  String _formatETA(Duration duration) {
-
-    return "Arriving in ${duration.inMinutes} min";
-  }
-
-  bool _showETA(OrderModel order) {
-    return order.orderStatus != "DELIVERED" &&
-        order.orderStatus != "CANCELLED" &&
-        _remainingDeliveryTime(order).inMinutes > 0;
   }
 
   // ====================================
@@ -572,6 +542,15 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
     return "$hour:$minute $period";
   }
 
+  Future<void> _handleRefresh() async {
+    setState(() {
+      _loadOrders();
+    });
+    try {
+      await _orders;
+    } catch (_) {}
+  }
+
   @override
   Widget build(BuildContext context) {
 
@@ -597,9 +576,21 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
 
           if (snapshot.hasError) {
 
-            return Center(
-              child: Text(
-                "Error: ${snapshot.error}",
+            return RefreshIndicator(
+              onRefresh: _handleRefresh,
+              child: ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                children: [
+                  SizedBox(
+                    height: MediaQuery.of(context).size.height * 0.7,
+                    child: Center(
+                      child: Text(
+                        "Error: ${snapshot.error}",
+                        style: const TextStyle(color: Colors.white70),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             );
           }
@@ -608,53 +599,67 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
           snapshot.data!.reversed.toList();
 
           if (orders.isEmpty) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: Colors.green.withOpacity(0.05),
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: Colors.green.withOpacity(0.15),
-                          width: 1.5,
+            return RefreshIndicator(
+              onRefresh: _handleRefresh,
+              child: ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                children: [
+                  SizedBox(
+                    height: MediaQuery.of(context).size.height * 0.7,
+                    child: Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24.0),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(20),
+                              decoration: BoxDecoration(
+                                color: Colors.green.withOpacity(0.05),
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: Colors.green.withOpacity(0.15),
+                                  width: 1.5,
+                                ),
+                              ),
+                              child: const Icon(
+                                Icons.shopping_bag_outlined,
+                                size: 56,
+                                color: Colors.green,
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                            const Text(
+                              "No Orders Yet",
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            const Text(
+                              "Your order history is empty. Go back and place your first order now!",
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      child: const Icon(
-                        Icons.shopping_bag_outlined,
-                        size: 56,
-                        color: Colors.green,
-                      ),
                     ),
-                    const SizedBox(height: 20),
-                    const Text(
-                      "No Orders Yet",
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      "Your order history is empty. Go back and place your first order now!",
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey,
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             );
           }
 
-          return ListView.builder(
+          return RefreshIndicator(
+            onRefresh: _handleRefresh,
+            child: ListView.builder(
+              physics: const AlwaysScrollableScrollPhysics(),
 
             itemCount: orders.length,
 
@@ -667,9 +672,6 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
 
               final cancelRemaining =
               _remainingCancelTime(order);
-
-              final deliveryRemaining =
-              _remainingDeliveryTime(order);
 
               return Container(
                 margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -684,7 +686,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                     tilePadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
                     childrenPadding: const EdgeInsets.only(bottom: 6),
                     title: Text(
-                      "Order #${order.orderId}",
+                      "Order #${orders.length - index}",
                       style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white),
                     ),
 
@@ -729,19 +731,6 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                         "Total: ₹${order.totalAmount}",
                         style: const TextStyle(fontSize: 11, color: Colors.white70),
                       ),
-
-                      if (_showETA(order))
-                        Text(
-                          _formatETA(
-                              deliveryRemaining),
-
-                          style: const TextStyle(
-                            color: Colors.blue,
-                            fontSize: 11,
-                            fontWeight:
-                            FontWeight.bold,
-                          ),
-                        ),
 
                       if (_canCancel(order))
                         Text(
@@ -1003,9 +992,10 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                   ],
                 ),
               ),
-            );
+              );
             },
-          );
+          ),
+        );
         },
       ),
     );

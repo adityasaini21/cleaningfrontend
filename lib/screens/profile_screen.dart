@@ -46,10 +46,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   late TextEditingController _pincodeController;
   late TextEditingController _landmarkController;
 
-  // Password Controllers
-  final _oldPasswordController = TextEditingController();
-  final _newPasswordController = TextEditingController();
-
   @override
   void initState() {
     super.initState();
@@ -83,8 +79,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _addressController.dispose();
     _pincodeController.dispose();
     _landmarkController.dispose();
-    _oldPasswordController.dispose();
-    _newPasswordController.dispose();
     super.dispose();
   }
 
@@ -189,98 +183,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
       );
     }
-  }
-
-  void _showChangePasswordDialog() {
-    _oldPasswordController.clear();
-    _newPasswordController.clear();
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          backgroundColor: const Color(0xFF1C1C1E),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-            side: const BorderSide(color: Color(0xFF2C2C2E), width: 0.5),
-          ),
-          title: const Text(
-            "Change Password",
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-          ),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-              TextField(
-                controller: _oldPasswordController,
-                obscureText: true,
-                style: const TextStyle(color: Colors.white),
-                decoration: const InputDecoration(
-                  labelText: "Old Password",
-                  labelStyle: TextStyle(color: Colors.grey),
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _newPasswordController,
-                obscureText: true,
-                style: const TextStyle(color: Colors.white),
-                decoration: const InputDecoration(
-                  labelText: "New Password",
-                  labelStyle: TextStyle(color: Colors.grey),
-                ),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text(
-                "Cancel",
-                style: TextStyle(color: Color(0xFF0A84FF)),
-              ),
-            ),
-            TextButton(
-              onPressed: () async {
-                final oldPassword = _oldPasswordController.text.trim();
-                final newPassword = _newPasswordController.text.trim();
-
-                if (oldPassword.isEmpty || newPassword.isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text("All fields are required")),
-                  );
-                  return;
-                }
-
-                if (newPassword.length < 6) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text("New password must be at least 6 characters")),
-                  );
-                  return;
-                }
-
-                final error = await _profileService.changePassword(oldPassword, newPassword);
-                if (mounted) {
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(error ?? "Password changed successfully!"),
-                      backgroundColor: error == null ? Colors.green : Colors.red,
-                    ),
-                  );
-                }
-              },
-              child: const Text(
-                "Change",
-                style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
-              ),
-            ),
-          ],
-        );
-      },
-    );
   }
 
   void _showCustomerCareBottomSheet() {
@@ -577,14 +479,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           subtitle: const Text("View your past purchases", style: TextStyle(color: Colors.grey, fontSize: 12)),
                           trailing: const Icon(Icons.arrow_forward_ios, size: 14, color: Colors.grey),
                           onTap: widget.onOrdersTap,
-                        ),
-                        const Divider(color: Color(0xFF2C2C2E), height: 1, indent: 56),
-                        ListTile(
-                          leading: const Icon(Icons.lock_outline, color: Colors.white70),
-                          title: const Text("Change Password", style: TextStyle(color: Colors.white)),
-                          subtitle: const Text("Keep your account secure", style: TextStyle(color: Colors.grey, fontSize: 12)),
-                          trailing: const Icon(Icons.arrow_forward_ios, size: 14, color: Colors.grey),
-                          onTap: _showChangePasswordDialog,
                         ),
                       ]),
 
