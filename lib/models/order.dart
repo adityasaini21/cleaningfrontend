@@ -38,6 +38,7 @@ class OrderModel {
 
   final String shippingAddress;
   final String phoneNumber;
+  final String customerName;
   final String pincode;
 
   // 🚚 Delivery Boy Details
@@ -55,6 +56,7 @@ class OrderModel {
     required this.totalAmount,
     required this.shippingAddress,
     required this.phoneNumber,
+    this.customerName = "",
     required this.pincode,
     required this.deliveryBoyName,
     required this.deliveryBoyPhone,
@@ -80,6 +82,9 @@ class OrderModel {
 
       phoneNumber:
       json['phoneNumber'] ?? "",
+
+      customerName:
+      json['customerName'] ?? "",
 
       pincode:
       json['pincode'] ?? "",

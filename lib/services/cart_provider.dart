@@ -55,6 +55,7 @@ class CartProvider with ChangeNotifier {
   // ADD TO CART
   // =========================
   void addToCart(Product product) {
+    if (product.isComingSoon) return;
 
     final index =
     _items.indexWhere((item) => item.product.id == product.id);
@@ -73,6 +74,7 @@ class CartProvider with ChangeNotifier {
   // 🔥 ADD WITH QUANTITY (NEW)
   // =========================
   void addToCartWithQuantity(Product product, int quantity) {
+    if (product.isComingSoon) return;
 
     final index =
     _items.indexWhere((item) => item.product.id == product.id);

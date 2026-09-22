@@ -79,4 +79,46 @@ class Product {
       'reviewCount': reviewCount,
     };
   }
+
+  // =========================================
+  // LIVE & COMING SOON STATUS
+  // =========================================
+
+  bool get isLive {
+    final n = name.trim().toLowerCase();
+
+    // Explicit exclusions for compound / liquid / non-live variants
+    if (n.contains('compound')) return false;
+    if (n.contains('detergent powder') || n.contains('detergent')) return false;
+    if (n.contains('safe wash')) return false;
+    if (n.contains('dish wash liquid') || n.contains('dish wash soap')) return false;
+    if (n.contains('anti stain') || n.contains('antistain')) return false;
+    if (n.contains('room freshener')) return false;
+    if (n.contains('pet shampoo')) return false;
+
+    // 1. Tiles Cleaner
+    if (n.contains('tiles cleaner') || n.contains('tile cleaner') || n.contains('tiles+toiletcleaner')) return true;
+    // 2. Toilet Cleaner
+    if (n.contains('toilet cleaner') || n.contains('toiletcleaner')) return true;
+    // 3. Glass Cleaner
+    if (n.contains('glass cleaner') || n.contains('glasscleaner')) return true;
+    // 4. Germtral / Germdral
+    if (n.contains('germtral') || n.contains('germdral')) return true;
+    // 5. White Phenyl
+    if (n.contains('white phenyl') || n.contains('whitephenyl')) return true;
+    // 6. Hand Wash Gel / Hand Wash
+    if (n.contains('hand wash') || n.contains('handwash')) return true;
+    // 7. Pink Phenyl
+    if (n.contains('pink phenyl') || n.contains('pinkphenyl')) return true;
+    // 8. Black Phenyl
+    if (n.contains('black phenyl') || n.contains('blackphenyl')) return true;
+    // 9. Dish Wash Gel
+    if (n.contains('dish wash gel') || n.contains('dishwash gel')) return true;
+    // 10. VehiClean / Car Shampoo
+    if (n.contains('vehiclean') || n.contains('car shampoo') || n.contains('carshampoo')) return true;
+
+    return false;
+  }
+
+  bool get isComingSoon => !isLive;
 }

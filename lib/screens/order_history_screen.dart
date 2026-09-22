@@ -656,12 +656,14 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
             );
           }
 
-          return RefreshIndicator(
-            onRefresh: _handleRefresh,
-            child: ListView.builder(
-              physics: const AlwaysScrollableScrollPhysics(),
-
-            itemCount: orders.length,
+          return Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 850),
+              child: RefreshIndicator(
+                onRefresh: _handleRefresh,
+                child: ListView.builder(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  itemCount: orders.length,
 
             itemBuilder: (context, index) {
 
@@ -995,8 +997,10 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
               );
             },
           ),
-        );
-        },
+        ),
+      ),
+    );
+  },
       ),
     );
   }

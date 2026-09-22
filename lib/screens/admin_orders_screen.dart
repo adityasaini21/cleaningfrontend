@@ -168,31 +168,30 @@ class _AdminOrdersScreenState
         localDate.year == now.year;
   }
 
+  Future<void> _handleRefresh() async {
+    setState(() {
+      _loadOrders();
+    });
+    try {
+      await _orders;
+    } catch (_) {}
+  }
+
   @override
   Widget build(BuildContext context) {
 
     return Scaffold(
 
       appBar: AppBar(
-
-        title:
-        const Text("Admin Dashboard"),
-
+        title: const Text("Orders Management"),
         actions: [
-
           IconButton(
-
-            icon: const Icon(Icons.delete),
-
+            icon: const Icon(Icons.delete_sweep_outlined),
             onPressed: () {
-
               Navigator.push(
-
                 context,
-
                 MaterialPageRoute(
-                  builder: (_) =>
-                  const DeletedProductsScreen(),
+                  builder: (_) => const DeletedProductsScreen(),
                 ),
               );
             },
@@ -206,27 +205,63 @@ class _AdminOrdersScreenState
 
         builder: (context, snapshot) {
 
-          if (snapshot.connectionState ==
-              ConnectionState.waiting) {
-
+          if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(
-              child:
-              CircularProgressIndicator(),
+              child: CircularProgressIndicator(),
             );
           }
 
           if (snapshot.hasError) {
-
-            return Center(
-              child: Text(
-                "Error: ${snapshot.error}",
+            return RefreshIndicator(
+              onRefresh: _handleRefresh,
+              child: ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                children: [
+                  SizedBox(
+                    height: MediaQuery.of(context).size.height * 0.7,
+                    child: Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24.0),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.error_outline, size: 48, color: Colors.redAccent),
+                            const SizedBox(height: 12),
+                            Text(
+                              "Error: ${snapshot.error}",
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(color: Colors.white70, fontSize: 13),
+                            ),
+                            const SizedBox(height: 16),
+                            ElevatedButton.icon(
+                              onPressed: () => setState(() => _loadOrders()),
+                              icon: const Icon(Icons.refresh, size: 16),
+                              label: const Text("Retry"),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             );
           }
 
-          if (!snapshot.hasData) {
-            return const Center(
-              child: Text("No Orders"),
+          if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return RefreshIndicator(
+              onRefresh: _handleRefresh,
+              child: ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                children: [
+                  SizedBox(
+                    height: MediaQuery.of(context).size.height * 0.7,
+                    child: const Center(
+                      child: Text("No Orders Found", style: TextStyle(color: Colors.white70)),
+                    ),
+                  ),
+                ],
+              ),
             );
           }
 
@@ -281,14 +316,15 @@ class _AdminOrdersScreenState
               _isThisMonth(o.createdAt))
               .length;
 
-          return RefreshIndicator(
-
-            onRefresh: () async {
-
-              setState(() {
-                _loadOrders();
-              });
-            },
+          return Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 850),
+              child: RefreshIndicator(
+                onRefresh: () async {
+                  setState(() {
+                    _loadOrders();
+                  });
+                },
 
             child: ListView(
 
@@ -719,6 +755,30 @@ class _AdminOrdersScreenState
 
                               const SizedBox(height: 16),
 
+                              if (order.customerName.isNotEmpty) ...[
+                                Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.account_circle,
+                                      size: 18,
+                                      color: Color(0xFF0A84FF),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        order.customerName,
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 14,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 12),
+                              ],
+
                               Row(
                                 children: [
 
@@ -1019,11 +1079,13 @@ class _AdminOrdersScreenState
                 }),
               ],
             ),
-          );
-        },
-      ),
-    );
-  }
+          ),
+        ),
+      );
+    },
+  ),
+);
+}
 
   // =====================================
   // CARD

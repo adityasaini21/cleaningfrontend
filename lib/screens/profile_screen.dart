@@ -11,12 +11,14 @@ import 'package:url_launcher/url_launcher.dart';
 class ProfileScreen extends StatefulWidget {
   final VoidCallback onOrdersTap;
   final bool startInEditMode;
+  final bool isMandatoryOnboarding;
   final VoidCallback? onProfileSaved;
 
   const ProfileScreen({
     super.key,
     required this.onOrdersTap,
     this.startInEditMode = false,
+    this.isMandatoryOnboarding = false,
     this.onProfileSaved,
   });
 
@@ -49,7 +51,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   void initState() {
     super.initState();
-    _isEditing = widget.startInEditMode; // Toggle edit mode if redirected from onboarding
+    _isEditing = widget.startInEditMode || widget.isMandatoryOnboarding; // Toggle edit mode if redirected from onboarding
     _fullNameController = TextEditingController();
     _emailController = TextEditingController();
     _addressController = TextEditingController();
@@ -152,7 +154,35 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _saveProfile() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Please fill all required delivery details!"),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+      return;
+    }
+
+    if (_selectedState == null || _selectedState!.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Please select your State"),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+      return;
+    }
+
+    if (_selectedCity == null || _selectedCity!.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Please select your City"),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+      return;
+    }
 
     setState(() => _isSaving = true);
     final updatedProfile = UserProfile(
@@ -173,12 +203,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
           _initialProfile = updatedProfile;
           _isEditing = false; // Re-lock form and change top-right action button back to "Edit"
           FocusScope.of(context).unfocus(); // Dismiss keyboard automatically
-          widget.onProfileSaved?.call(); // Automatically trigger callback to navigate back to Products
+          widget.onProfileSaved?.call(); // Automatically trigger callback to unlock nav and navigate
         }
       });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(success ? "Profile updated successfully!" : "Failed to update profile"),
+          content: Text(success ? "Profile saved successfully! You can now browse and place orders." : "Failed to update profile"),
           backgroundColor: success ? Colors.green : Colors.red,
         ),
       );
@@ -258,6 +288,315 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
                 const SizedBox(height: 12),
               ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showReturnPolicyDialog() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF1C1C1E),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade600,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  const Row(
+                    children: [
+                      Icon(Icons.assignment_return_outlined, color: Color(0xFFFF9F0A), size: 24),
+                      SizedBox(width: 10),
+                      Text(
+                        "Return & Refund Policy",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFF9F0A).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFFFF9F0A).withOpacity(0.3), width: 1),
+                    ),
+                    child: const Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(Icons.info_outline, color: Color(0xFFFF9F0A), size: 20),
+                        SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            "All products sold on NuKlean / Prem Chemicals are strictly Non-Returnable and Non-Refundable once delivered.",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              height: 1.4,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  const Text(
+                    "Why Non-Returnable?",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  const Text(
+                    "Due to the nature of chemical cleaning agents, hygiene standards, and safety regulations, items once unsealed or delivered cannot be taken back or re-stocked.",
+                    style: TextStyle(
+                      color: Color(0xFF8E8E93),
+                      fontSize: 13,
+                      height: 1.4,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    "Damaged or Incorrect Item Received?",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  const Text(
+                    "If you received a damaged package or an incorrect item, please report it immediately to our Customer Care team with order details and photo proof within 24 hours of delivery. We will gladly inspect and resolve the issue for you.",
+                    style: TextStyle(
+                      color: Color(0xFF8E8E93),
+                      fontSize: 13,
+                      height: 1.4,
+                    ),
+                  ),
+                  const SizedBox(height: 22),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 46,
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF0A84FF),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      icon: const Icon(Icons.support_agent, size: 20, color: Colors.white),
+                      label: const Text(
+                        "Contact Customer Care",
+                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
+                      ),
+                      onPressed: () {
+                        Navigator.pop(context);
+                        _showCustomerCareBottomSheet();
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showPrivacyPolicyDialog() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF1C1C1E),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade600,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  const Row(
+                    children: [
+                      Icon(Icons.privacy_tip_outlined, color: Color(0xFF0A84FF), size: 24),
+                      SizedBox(width: 10),
+                      Text(
+                        "Privacy Policy",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: const Color(0x200A84FF),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0x660A84FF), width: 1),
+                    ),
+                    child: const Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(Icons.shield_outlined, color: Color(0xFF0A84FF), size: 20),
+                        SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            "Prem Chemicals / NuKlean is committed to protecting your personal data and ensuring full privacy compliance.",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              height: 1.4,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  const Text(
+                    "1. Information We Collect",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  const Text(
+                    "We collect necessary details like your mobile number (for OTP authentication), full name, delivery address, city, pincode, and order history to process and deliver your cleaning chemical supplies.",
+                    style: TextStyle(
+                      color: Color(0xFF8E8E93),
+                      fontSize: 13,
+                      height: 1.4,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    "2. How We Use Your Data",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  const Text(
+                    "Your information is used strictly to fulfill orders, provide doorstep dispatch updates, coordinate customer care requests, and protect against fraudulent activities. We do NOT sell or lease your personal data to third-party advertisers.",
+                    style: TextStyle(
+                      color: Color(0xFF8E8E93),
+                      fontSize: 13,
+                      height: 1.4,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    "3. Payment Security",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  const Text(
+                    "All payments are processed through RBI-compliant, certified payment gateways (Razorpay / UPI). NuKlean never stores or handles your debit/credit card numbers or banking passwords.",
+                    style: TextStyle(
+                      color: Color(0xFF8E8E93),
+                      fontSize: 13,
+                      height: 1.4,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    "4. Data Rights & Control",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  const Text(
+                    "You retain full control over your account. You can view or update your name and address directly from the Profile section at any time.",
+                    style: TextStyle(
+                      color: Color(0xFF8E8E93),
+                      fontSize: 13,
+                      height: 1.4,
+                    ),
+                  ),
+                  const SizedBox(height: 22),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 46,
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF0A84FF),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      icon: const Icon(Icons.check_circle_outline, size: 20, color: Colors.white),
+                      label: const Text(
+                        "Understood",
+                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
+                      ),
+                      onPressed: () {
+                        Navigator.pop(context);
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                ],
+              ),
             ),
           ),
         );
@@ -403,40 +742,189 @@ class _ProfileScreenState extends State<ProfileScreen> {
         backgroundColor: Colors.black,
         elevation: 0,
         actions: [
-          TextButton(
-            onPressed: _isLoading
-                ? null
-                : () {
-                    setState(() {
-                      if (_isEditing) {
-                        _revertChanges();
-                        _isEditing = false;
-                      } else {
-                        _isEditing = true;
-                      }
-                    });
-                  },
-            child: Text(
-              _isEditing ? "Cancel" : "Edit",
-              style: TextStyle(
-                color: _isEditing ? Colors.redAccent : const Color(0xFF0A84FF),
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-              ),
-            ),
+          Padding(
+            padding: const EdgeInsets.only(right: 12, top: 8, bottom: 8),
+            child: _isEditing
+                ? (widget.isMandatoryOnboarding
+                    ? const SizedBox.shrink() // Don't show cancel button during required first-time onboarding
+                    : OutlinedButton(
+                        onPressed: _isLoading
+                            ? null
+                            : () {
+                                setState(() {
+                                  _revertChanges();
+                                  _isEditing = false;
+                                });
+                              },
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: Colors.redAccent, width: 1),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          padding: const EdgeInsets.symmetric(horizontal: 14),
+                        ),
+                        child: const Text(
+                          "Cancel",
+                          style: TextStyle(
+                            color: Colors.redAccent,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ))
+                : ElevatedButton.icon(
+                    onPressed: _isLoading
+                        ? null
+                        : () {
+                            setState(() {
+                              _isEditing = true;
+                            });
+                          },
+                    icon: const Icon(Icons.edit, size: 14, color: Colors.white),
+                    label: const Text(
+                      "Edit Profile",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF0A84FF),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 14),
+                      elevation: 2,
+                    ),
+                  ),
           ),
         ],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 18),
-                child: Form(
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 850),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 18),
+                    child: Form(
                   key: _formKey,
                   child: Column(
                     children: [
-                      const SizedBox(height: 18),
+                      const SizedBox(height: 14),
+
+                      // =========================================
+                      // MANDATORY ONBOARDING BANNER & NAVIGATION ARROW GRAPHIC
+                      // =========================================
+                      if (widget.isMandatoryOnboarding ||
+                          (_initialProfile != null &&
+                              ((_initialProfile!.address?.trim().isEmpty ?? true) ||
+                                  (_initialProfile!.city?.trim().isEmpty ?? true) ||
+                                  (_initialProfile!.state?.trim().isEmpty ?? true) ||
+                                  (_initialProfile!.pincode?.trim().isEmpty ?? true))))
+                        Container(
+                          margin: const EdgeInsets.only(bottom: 20),
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                const Color(0xFF0A84FF).withOpacity(0.18),
+                                const Color(0xFF2563EB).withOpacity(0.08),
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: const Color(0xFF0A84FF).withOpacity(0.5),
+                              width: 1.2,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFF0A84FF).withOpacity(0.15),
+                                blurRadius: 16,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF0A84FF).withOpacity(0.25),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(
+                                      Icons.lock_clock_outlined,
+                                      color: Color(0xFF0A84FF),
+                                      size: 22,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  const Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          "Action Required: Setup Delivery Profile",
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 15,
+                                          ),
+                                        ),
+                                        SizedBox(height: 2),
+                                        Text(
+                                          "Fill required address details below to unlock the app and start ordering. Email is optional.",
+                                          style: TextStyle(
+                                            color: Color(0xFF8E8E93),
+                                            fontSize: 12,
+                                            height: 1.3,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              if (!_isEditing) ...[
+                                const SizedBox(height: 12),
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: ElevatedButton.icon(
+                                    onPressed: () {
+                                      setState(() {
+                                        _isEditing = true;
+                                      });
+                                    },
+                                    icon: const Icon(Icons.arrow_downward, size: 16, color: Colors.white),
+                                    label: const Text(
+                                      "Tap to Fill Details ➔",
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFF0A84FF),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      padding: const EdgeInsets.symmetric(vertical: 10),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
 
                       // Avatar & Welcome Text
                       CircleAvatar(
@@ -469,9 +957,160 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                       ),
 
+                      const SizedBox(height: 20),
+
+                      // Section Title: Personal Details
+                      const Align(
+                        alignment: Alignment.centerLeft,
+                        child: Padding(
+                          padding: EdgeInsets.only(left: 8, bottom: 8),
+                          child: Text(
+                            "DELIVERY & PERSONAL DETAILS",
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.grey,
+                              letterSpacing: 1.2,
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      // Grouped Input Fields Card (iOS Rounded Style)
+                      _buildInputGroup([
+                        _buildInputField(
+                          controller: _fullNameController,
+                          label: "Full Name *",
+                          icon: Icons.person_outline,
+                          readOnly: !_isEditing,
+                          validator: (val) => val == null || val.trim().isEmpty ? "Full name is required" : null,
+                        ),
+                        _buildInputField(
+                          controller: _emailController,
+                          label: "Email Address (Optional)",
+                          icon: Icons.mail_outline,
+                          readOnly: !_isEditing,
+                          keyboardType: TextInputType.emailAddress,
+                          validator: (val) => (val != null && val.trim().isNotEmpty && !RegExp(r'^.+@.+\..+$').hasMatch(val.trim()))
+                              ? "Enter a valid email address"
+                              : null,
+                        ),
+                        _buildInputField(
+                          controller: _addressController,
+                          label: "Shipping Address *",
+                          icon: Icons.home_outlined,
+                          readOnly: !_isEditing,
+                          validator: (val) => val == null || val.trim().isEmpty
+                              ? "Shipping address is required"
+                              : (val.trim().length < 5 ? "Please enter complete street/house address" : null),
+                        ),
+                        _buildInputField(
+                          controller: _landmarkController,
+                          label: "Landmark / Area *",
+                          icon: Icons.pin_drop_outlined,
+                          readOnly: !_isEditing,
+                          validator: (val) => val == null || val.trim().isEmpty ? "Landmark is required" : null,
+                        ),
+                        _buildInputField(
+                          controller: _pincodeController,
+                          label: "Pincode *",
+                          icon: Icons.map_outlined,
+                          readOnly: !_isEditing,
+                          keyboardType: TextInputType.number,
+                          validator: (val) => val == null || val.trim().length != 6 ? "Valid 6-digit pincode is required" : null,
+                        ),
+                        _buildDropdownField(
+                          label: "State *",
+                          icon: Icons.map_outlined,
+                          value: _selectedState,
+                          items: indiaStatesAndCities.keys.toList(),
+                          validator: (val) => (val == null || val.trim().isEmpty) ? "Please select a state" : null,
+                          onChanged: !_isEditing ? null : (state) {
+                            setState(() {
+                              _selectedState = state;
+                              _selectedCity = null; // Reset city selection
+                            });
+                          },
+                        ),
+                        _buildDropdownField(
+                          label: "City *",
+                          icon: Icons.location_city_outlined,
+                          value: _selectedCity,
+                          placeholder: _selectedState == null ? "Choose State first" : "Select City",
+                          items: _selectedState != null ? indiaStatesAndCities[_selectedState]! : [],
+                          validator: (val) => (val == null || val.trim().isEmpty) ? "Please select a city" : null,
+                          onChanged: (!_isEditing || _selectedState == null) ? null : (city) {
+                            setState(() {
+                              _selectedCity = city;
+                            });
+                          },
+                          hideBottomBorder: true,
+                        ),
+                      ]),
+
+                      const SizedBox(height: 20),
+
+                      // Save Button
+                      SizedBox(
+                        width: double.infinity,
+                        height: 48,
+                        child: ElevatedButton(
+                          onPressed: (_isEditing && !_isSaving) ? _saveProfile : null,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF0A84FF), // iOS Blue
+                            foregroundColor: Colors.white,
+                            disabledBackgroundColor: const Color(0xFF2C2C2E), // Grayed out when inactive
+                            disabledForegroundColor: Colors.grey,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            elevation: 2,
+                          ),
+                          child: _isSaving
+                              ? const SizedBox(
+                                  width: 22,
+                                  height: 22,
+                                  child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                                )
+                              : const Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(Icons.check_circle_outline, size: 18),
+                                    SizedBox(width: 8),
+                                    Text(
+                                      "Save Delivery Details",
+                                      style: TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    SizedBox(width: 6),
+                                    Icon(Icons.arrow_forward_rounded, size: 16),
+                                  ],
+                                ),
+                        ),
+                      ),
+
                       const SizedBox(height: 28),
 
-                      // Grouped Card: Personal Info & Settings
+                      // Section Title: My Orders
+                      const Align(
+                        alignment: Alignment.centerLeft,
+                        child: Padding(
+                          padding: EdgeInsets.only(left: 8, bottom: 8),
+                          child: Text(
+                            "ORDERS",
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.grey,
+                              letterSpacing: 1.2,
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      // Grouped Card: Personal Info & Settings (My Orders)
                       _buildSettingsGroup([
                         ListTile(
                           leading: const Icon(Icons.receipt_long, color: Colors.white70),
@@ -482,9 +1121,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                       ]),
 
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 28),
 
-                      // Section Title: Help & Support
+                      // Section Title: Help & Support (Moved to Bottom)
                       const Align(
                         alignment: Alignment.centerLeft,
                         child: Padding(
@@ -510,122 +1149,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           trailing: const Icon(Icons.arrow_forward_ios, size: 14, color: Colors.grey),
                           onTap: _showCustomerCareBottomSheet,
                         ),
-                      ]),
-
-                      const SizedBox(height: 28),
-
-                      // Section Title: Personal Details
-                      const Align(
-                        alignment: Alignment.centerLeft,
-                        child: Padding(
-                          padding: EdgeInsets.only(left: 8, bottom: 8),
-                          child: Text(
-                            "PERSONAL DETAILS",
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.grey,
-                              letterSpacing: 1.2,
-                            ),
-                          ),
+                        const Divider(color: Color(0xFF2C2C2E), height: 1, indent: 56),
+                        ListTile(
+                          leading: const Icon(Icons.assignment_return_outlined, color: Colors.white70),
+                          title: const Text("Return & Refund Policy", style: TextStyle(color: Colors.white)),
+                          subtitle: const Text("Non-returnable policy & guidelines", style: TextStyle(color: Colors.grey, fontSize: 12)),
+                          trailing: const Icon(Icons.arrow_forward_ios, size: 14, color: Colors.grey),
+                          onTap: _showReturnPolicyDialog,
                         ),
-                      ),
-
-                      // Grouped Input Fields Card (iOS Rounded Style)
-                      _buildInputGroup([
-                        _buildInputField(
-                          controller: _fullNameController,
-                          label: "Full Name",
-                          icon: Icons.person_outline,
-                          readOnly: !_isEditing,
-                          validator: (val) => val == null || val.trim().isEmpty ? "Full name is required" : null,
-                        ),
-                        _buildInputField(
-                          controller: _emailController,
-                          label: "Email Address",
-                          icon: Icons.mail_outline,
-                          readOnly: !_isEditing,
-                          keyboardType: TextInputType.emailAddress,
-                        ),
-                        _buildInputField(
-                          controller: _addressController,
-                          label: "Shipping Address",
-                          icon: Icons.home_outlined,
-                          readOnly: !_isEditing,
-                        ),
-                        _buildInputField(
-                          controller: _landmarkController,
-                          label: "Landmark",
-                          icon: Icons.pin_drop_outlined,
-                          readOnly: !_isEditing,
-                        ),
-                        _buildInputField(
-                          controller: _pincodeController,
-                          label: "Pincode",
-                          icon: Icons.map_outlined,
-                          readOnly: !_isEditing,
-                          keyboardType: TextInputType.number,
-                        ),
-                        _buildDropdownField(
-                          label: "State",
-                          icon: Icons.map_outlined,
-                          value: _selectedState,
-                          items: indiaStatesAndCities.keys.toList(),
-                          onChanged: !_isEditing ? null : (state) {
-                            setState(() {
-                              _selectedState = state;
-                              _selectedCity = null; // Reset city selection
-                            });
-                          },
-                        ),
-                        _buildDropdownField(
-                          label: "City",
-                          icon: Icons.location_city_outlined,
-                          value: _selectedCity,
-                          placeholder: _selectedState == null ? "Choose State first" : "Select City",
-                          items: _selectedState != null ? indiaStatesAndCities[_selectedState]! : [],
-                          onChanged: (!_isEditing || _selectedState == null) ? null : (city) {
-                            setState(() {
-                              _selectedCity = city;
-                            });
-                          },
-                          hideBottomBorder: true,
+                        const Divider(color: Color(0xFF2C2C2E), height: 1, indent: 56),
+                        ListTile(
+                          leading: const Icon(Icons.privacy_tip_outlined, color: Colors.white70),
+                          title: const Text("Privacy Policy", style: TextStyle(color: Colors.white)),
+                          subtitle: const Text("Data protection & safety practices", style: TextStyle(color: Colors.grey, fontSize: 12)),
+                          trailing: const Icon(Icons.arrow_forward_ios, size: 14, color: Colors.grey),
+                          onTap: _showPrivacyPolicyDialog,
                         ),
                       ]),
-
-                      const SizedBox(height: 25),
-
-                      // Save Button
-                      SizedBox(
-                        width: double.infinity,
-                        height: 42,
-                        child: ElevatedButton(
-                          onPressed: (_isEditing && _hasChanges() && !_isSaving) ? _saveProfile : null,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF0A84FF), // iOS Blue
-                            disabledBackgroundColor: const Color(0xFF2C2C2E), // Grayed out when inactive
-                            padding: EdgeInsets.zero,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            elevation: 0,
-                          ),
-                          child: _isSaving
-                              ? const SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                                )
-                              : Text(
-                                  "Save Changes",
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.bold,
-                                    color: (_isEditing && _hasChanges()) ? Colors.white : Colors.grey,
-                                  ),
-                                ),
-                        ),
-                      ),
 
                       const SizedBox(height: 16),
 
@@ -662,6 +1202,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
               ),
             ),
+          ),
+        ),
     );
   }
 
@@ -739,6 +1281,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     required ValueChanged<String?>? onChanged,
     String? placeholder,
     bool hideBottomBorder = false,
+    String? Function(String?)? validator,
   }) {
     return Container(
       decoration: BoxDecoration(
@@ -750,6 +1293,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
       child: DropdownButtonFormField<String>(
         value: value,
+        validator: validator,
         isExpanded: true,
         dropdownColor: const Color(0xFF1C1C1E),
         icon: const Icon(Icons.keyboard_arrow_down, color: Color(0xFF8E8E93)),

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -14,6 +15,44 @@ class MaintenanceScreen extends StatefulWidget {
 
 class _MaintenanceScreenState extends State<MaintenanceScreen> {
   bool _checking = false;
+  Timer? _autoCheckTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    // Auto-poll service status so screen automatically recovers when admin reactivates service
+    _autoCheckTimer = Timer.periodic(
+      const Duration(milliseconds: 2500),
+      (_) => _checkStatusSilent(),
+    );
+  }
+
+  @override
+  void dispose() {
+    _autoCheckTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _checkStatusSilent() async {
+    try {
+      final response = await http.get(
+        Uri.parse("${ApiClient.baseUrl}/api/service-status"),
+      ).timeout(const Duration(seconds: 3));
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final bool suspended = data["suspended"] ?? false;
+
+        if (!suspended && mounted) {
+          _autoCheckTimer?.cancel();
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (context) => const SplashScreen()),
+            (route) => false,
+          );
+        }
+      }
+    } catch (_) {}
+  }
 
   Future<void> _checkStatus() async {
     setState(() {
@@ -32,6 +71,7 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
         if (!suspended) {
           // Service is back online! Redirect to splash/main screen
           if (mounted) {
+            _autoCheckTimer?.cancel();
             Navigator.of(context).pushAndRemoveUntil(
               MaterialPageRoute(builder: (context) => const SplashScreen()),
               (route) => false,

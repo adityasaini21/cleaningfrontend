@@ -441,22 +441,19 @@ class _CheckoutScreenState
       ),
 
       body: SingleChildScrollView(
-
-        padding:
-        const EdgeInsets.fromLTRB(
+        padding: const EdgeInsets.fromLTRB(
           16,
           16,
           16,
           170,
         ),
-
-        child: Column(
-
-          crossAxisAlignment:
-          CrossAxisAlignment.start,
-
-          children: [
-            _buildProfileImportCard(),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 800),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildProfileImportCard(),
             const SizedBox(height: 12),
 
             // =====================================
@@ -981,127 +978,100 @@ class _CheckoutScreenState
           ],
         ),
       ),
+    ),
+  ),
 
       // =====================================
       // FIXED PLACE ORDER BUTTON
       // =====================================
 
-      bottomNavigationBar: Container(
-
-        margin: EdgeInsets.only(
-          left: 12,
-          right: 12,
-          bottom: MediaQuery.of(context).padding.bottom + 8,
-        ),
-
-        padding: const EdgeInsets.symmetric(
-          horizontal: 14,
-          vertical: 8,
-        ),
-
-        decoration: BoxDecoration(
-
-          color: const Color(0xFF111827),
-
-          borderRadius: BorderRadius.circular(16),
-
-          border: Border.all(
-            color: Colors.white.withOpacity(0.05),
-          ),
-
-          boxShadow: [
-
-            BoxShadow(
-              color: Colors.black.withOpacity(0.25),
-              blurRadius: 20,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
-
-        child: SafeArea(
-
-          top: false,
-
-          child: SizedBox(
-
-            height: 42,
-
-            child: ElevatedButton(
-
-              onPressed:
-              (_isDeliverable &&
-                  !_loading)
-                  ? _placeOrder
-                  : null,
-
-              style:
-              ElevatedButton.styleFrom(
-
-                backgroundColor:
-                const Color(0xFF2563EB),
-
-                foregroundColor:
-                Colors.white,
-
-                padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
-
-                disabledBackgroundColor:
-                const Color(0xFF2563EB).withOpacity(0.24),
-
-                disabledForegroundColor:
-                Colors.white.withOpacity(0.4),
-
-                shape:
-                RoundedRectangleBorder(
-
-                  borderRadius:
-                  BorderRadius.circular(
-                    12,
-                  ),
-                ),
+      bottomNavigationBar: SafeArea(
+        top: false,
+        child: Align(
+          alignment: Alignment.bottomCenter,
+          heightFactor: 1.0,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 800),
+            child: Container(
+              margin: EdgeInsets.only(
+                left: 12,
+                right: 12,
+                bottom: MediaQuery.of(context).padding.bottom + 8,
               ),
-
-              child: _loading
-
-                  ? const SizedBox(
-
-                height: 22,
-                width: 22,
-
-                child:
-                CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: Colors.white,
+              padding: const EdgeInsets.symmetric(
+                horizontal: 14,
+                vertical: 8,
+              ),
+              decoration: BoxDecoration(
+                color: const Color(0xFF111827),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.05),
                 ),
-              )
-
-                  : const Row(
-
-                mainAxisAlignment:
-                MainAxisAlignment.center,
-
-                children: [
-
-                  Icon(
-                    Icons.shopping_bag,
-                  ),
-
-                  SizedBox(width: 10),
-
-                  Text(
-
-                    "Place Order",
-
-                    style: TextStyle(
-
-                      fontSize: 16,
-
-                      fontWeight:
-                      FontWeight.bold,
-                    ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.25),
+                    blurRadius: 20,
+                    offset: const Offset(0, 8),
                   ),
                 ],
+              ),
+              child: SizedBox(
+                height: 42,
+                child: ElevatedButton(
+                  onPressed:
+                  (_isDeliverable &&
+                      !_loading)
+                      ? _placeOrder
+                      : null,
+                  style:
+                  ElevatedButton.styleFrom(
+                    backgroundColor:
+                    const Color(0xFF2563EB),
+                    foregroundColor:
+                    Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
+                    disabledBackgroundColor:
+                    const Color(0xFF2563EB).withOpacity(0.24),
+                    disabledForegroundColor:
+                    Colors.white.withOpacity(0.4),
+                    shape:
+                    RoundedRectangleBorder(
+                      borderRadius:
+                      BorderRadius.circular(
+                        12,
+                      ),
+                    ),
+                  ),
+                  child: _loading
+                      ? const SizedBox(
+                    height: 22,
+                    width: 22,
+                    child:
+                    CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                      : const Row(
+                    mainAxisAlignment:
+                    MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.shopping_bag,
+                      ),
+                      SizedBox(width: 10),
+                      Text(
+                        "Place Order",
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight:
+                          FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
           ),

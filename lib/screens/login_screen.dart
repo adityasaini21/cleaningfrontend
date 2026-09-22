@@ -37,6 +37,8 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _sendingOtp = false;
   final TextEditingController _otpController = TextEditingController();
   final TextEditingController _fullNameController = TextEditingController();
+  final FocusNode _fullNameFocusNode = FocusNode();
+  final FocusNode _phoneFocusNode = FocusNode();
 
   Timer? _resendTimer;
   int _resendCountdown = 60;
@@ -148,6 +150,13 @@ class _LoginScreenState extends State<LoginScreen> {
           // New user and name is empty: prompt name input
           setState(() {
             _sendingOtp = false;
+          });
+          _phoneFocusNode.unfocus();
+          FocusScope.of(context).unfocus();
+          Future.delayed(const Duration(milliseconds: 150), () {
+            if (mounted) {
+              _fullNameFocusNode.requestFocus();
+            }
           });
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text("It looks like you're new! Please enter your name first, then click Send OTP.")),
@@ -287,6 +296,8 @@ class _LoginScreenState extends State<LoginScreen> {
     _passwordController.dispose();
     _otpController.dispose();
     _fullNameController.dispose();
+    _fullNameFocusNode.dispose();
+    _phoneFocusNode.dispose();
     _resendTimer?.cancel();
     super.dispose();
   }
@@ -383,7 +394,10 @@ class _LoginScreenState extends State<LoginScreen> {
                               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
                               child: TextField(
                                 controller: _fullNameController,
+                                focusNode: _fullNameFocusNode,
+                                keyboardType: TextInputType.text,
                                 textCapitalization: TextCapitalization.words,
+                                textInputAction: TextInputAction.next,
                                 style: const TextStyle(fontSize: 15, color: Colors.white),
                                 decoration: const InputDecoration(
                                   labelText: "Full Name",
@@ -415,6 +429,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
                             child: TextField(
                               controller: _phoneController,
+                              focusNode: _phoneFocusNode,
                               keyboardType: TextInputType.phone,
                               maxLength: 10,
                               readOnly: _otpSent,

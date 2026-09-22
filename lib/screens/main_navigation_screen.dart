@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 
 import 'package:flutter/material.dart';
@@ -30,8 +31,6 @@ class MainNavigationScreen extends StatefulWidget {
       _MainNavigationScreenState();
 }
 
-class _AdminNavigationScreenState {} // Keep compiler happy if any reference exists
-
 class _MainNavigationScreenState
     extends State<MainNavigationScreen> {
 
@@ -42,6 +41,7 @@ class _MainNavigationScreenState
 
   int _unreadCount = 0;
   bool _startProfileInEditMode = false; // Flag to trigger profile edit onboarding
+  bool _isProfileIncomplete = false; // Locks the navbar until required profile is saved
 
 
 
@@ -60,6 +60,9 @@ class _MainNavigationScreenState
 
   Timer?
   _sessionCheckTimer;
+
+  Timer?
+  _maintenancePollTimer;
 
   @override
   void initState() {
@@ -99,6 +102,13 @@ class _MainNavigationScreenState
           _handleMaintenance();
         });
 
+    // Real-time instantaneous maintenance status check (polls lightweight status every 2.5s)
+    _checkServiceStatus();
+    _maintenancePollTimer = Timer.periodic(
+      const Duration(milliseconds: 2500),
+      (_) => _checkServiceStatus(),
+    );
+
     // Periodically verify session by polling an authenticated endpoint (60s interval for cost optimization)
     _sessionCheckTimer = Timer.periodic(
       const Duration(seconds: 60),
@@ -113,6 +123,22 @@ class _MainNavigationScreenState
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkFirstTimeSetup();
     });
+  }
+
+  Future<void> _checkServiceStatus() async {
+    if (_isAdmin || !mounted) return;
+    try {
+      final response = await http.get(
+        Uri.parse("${ApiClient.baseUrl}/api/service-status"),
+      ).timeout(const Duration(seconds: 3));
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data["suspended"] == true) {
+          _handleMaintenance();
+        }
+      }
+    } catch (_) {}
   }
 
   void _handleMaintenance() {
@@ -157,6 +183,7 @@ class _MainNavigationScreenState
     _unauthorizedSubscription?.cancel();
     _maintenanceSubscription?.cancel();
     _sessionCheckTimer?.cancel();
+    _maintenancePollTimer?.cancel();
 
     super.dispose();
   }
@@ -237,9 +264,19 @@ class _MainNavigationScreenState
   // =========================================
 
   void _changeTab(int index) {
+    if (_isProfileIncomplete && index != 4) {
+      ScaffoldMessenger.of(context).clearSnackBars();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("⚠️ Navigation Locked: Please complete and save your required delivery profile first."),
+          backgroundColor: Colors.orange,
+          duration: Duration(seconds: 3),
+        ),
+      );
+      return;
+    }
 
     setState(() {
-
       _currentIndex = index;
       _startProfileInEditMode = false; // Reset edit onboarding flag on manual navigation
     });
@@ -248,7 +285,6 @@ class _MainNavigationScreenState
     _isAdmin ? 2 : 3;
 
     if (index == notificationTabIndex) {
-
       _loadUnreadCount();
     }
   }
@@ -270,13 +306,14 @@ class _MainNavigationScreenState
 
         if (isAddressIncomplete && mounted) {
           setState(() {
+            _isProfileIncomplete = true; // Lock navbar until saved
             _currentIndex = 4; // Shift tab focus to profile screen
             _startProfileInEditMode = true; // Auto-activate edit forms
           });
 
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text("Welcome! Please complete your delivery profile details."),
+              content: Text("Welcome! Please complete your delivery profile details to start using the app."),
               backgroundColor: Color(0xFF0A84FF),
               duration: Duration(seconds: 4),
             ),
@@ -441,7 +478,14 @@ class _MainNavigationScreenState
       ProfileScreen(
         onOrdersTap: () => _changeTab(2),
         startInEditMode: _startProfileInEditMode,
-        onProfileSaved: () => _changeTab(0),
+        isMandatoryOnboarding: _isProfileIncomplete,
+        onProfileSaved: () {
+          setState(() {
+            _isProfileIncomplete = false;
+            _startProfileInEditMode = false;
+          });
+          _changeTab(0);
+        },
       ),
     ];
 
@@ -560,109 +604,73 @@ class _MainNavigationScreenState
       // =========================================
 
       bottomNavigationBar: SafeArea(
-
-        child: Padding(
-
-          padding: const EdgeInsets.only(
-
-            left: 18,
-            right: 18,
-            bottom: 14,
-          ),
-
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(30),
-            child: Container(
-
-                height: 70,
-
-                decoration: BoxDecoration(
-
-                  gradient: LinearGradient(
-
-                    colors: [
-
-                      Colors.white.withOpacity(0.12),
-
-                      Colors.white.withOpacity(0.06),
+        child: Align(
+          alignment: Alignment.bottomCenter,
+          heightFactor: 1.0,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 600),
+            child: Padding(
+              padding: const EdgeInsets.only(
+                left: 18,
+                right: 18,
+                bottom: 14,
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(30),
+                child: Container(
+                  height: 70,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        Colors.white.withOpacity(0.12),
+                        Colors.white.withOpacity(0.06),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(30),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.10),
+                      width: 1,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.25),
+                        blurRadius: 10,
+                        offset: const Offset(0, 15),
+                      ),
+                      BoxShadow(
+                        color: Colors.blue.withOpacity(0.08),
+                        blurRadius: 12,
+                      ),
                     ],
-
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
                   ),
-
-                  borderRadius:
-                  BorderRadius.circular(30),
-
-                  border: Border.all(
-
-                    color:
-                    Colors.white.withOpacity(0.10),
-
-                    width: 1,
-                  ),
-
-                  boxShadow: [
-
-                    BoxShadow(
-
-                      color: Colors.black
-                          .withOpacity(0.25),
-
-                      blurRadius: 10,
-
-                      offset:
-                      const Offset(0, 15),
+                  child: Theme(
+                    data: Theme.of(context).copyWith(
+                      splashColor: Colors.transparent,
+                      highlightColor: Colors.transparent,
+                      hoverColor: Colors.transparent,
                     ),
-
-                    BoxShadow(
-
-                      color: Colors.blue
-                          .withOpacity(0.08),
-
-                      blurRadius: 12,
+                    child: SalomonBottomBar(
+                      currentIndex: _currentIndex,
+                      onTap: _changeTab,
+                      margin: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 10,
+                      ),
+                      itemPadding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 8,
+                      ),
+                      items: _isAdmin ? adminItems : userItems,
                     ),
-                  ],
-                ),
-
-                child: Theme(
-
-                  data: Theme.of(context).copyWith(
-                    splashColor: Colors.transparent,
-                    highlightColor: Colors.transparent,
-                    hoverColor: Colors.transparent,
-                  ),
-
-                  child: SalomonBottomBar(
-
-                    currentIndex:
-                    _currentIndex,
-
-                    onTap: _changeTab,
-
-                    margin:
-                    const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 10,
-                    ),
-
-                    itemPadding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 8,
-                    ),
-
-
-                    items:
-                    _isAdmin
-                        ? adminItems
-                        : userItems,
                   ),
                 ),
               ),
             ),
           ),
         ),
-      );
-
+      ),
+    );
   }
 }

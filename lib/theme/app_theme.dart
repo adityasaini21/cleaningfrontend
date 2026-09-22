@@ -253,5 +253,25 @@ class AppTheme {
     iconTheme: const IconThemeData(
       color: textPrimary,
     ),
+
+    // =========================================
+    // SNACKBAR (Floating iOS Toast)
+    // =========================================
+
+    snackBarTheme: SnackBarThemeData(
+      behavior: SnackBarBehavior.floating,
+      backgroundColor: card,
+      contentTextStyle: const TextStyle(
+        color: textPrimary,
+        fontSize: 13,
+      ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(10),
+        side: const BorderSide(
+          color: cardLight,
+          width: 0.5,
+        ),
+      ),
+    ),
   );
 }

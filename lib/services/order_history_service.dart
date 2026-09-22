@@ -108,7 +108,7 @@ class OrderHistoryService {
     } else {
 
       throw Exception(
-        "Failed to load admin orders",
+        "Failed to load admin orders (${response.statusCode}): ${response.body}",
       );
     }
   }

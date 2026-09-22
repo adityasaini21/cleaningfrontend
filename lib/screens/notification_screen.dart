@@ -117,15 +117,16 @@ class _NotificationScreenState
       _notifications.removeAt(index);
     });
 
-    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).clearSnackBars();
 
+    Timer? dismissTimer;
     final snackBarController = ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: const Text(
           "Alert deleted successfully",
           style: TextStyle(color: Colors.white),
         ),
-        duration: const Duration(seconds: 4),
+        duration: const Duration(seconds: 5),
         backgroundColor: const Color(0xFF1C1C1E),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(
@@ -136,6 +137,7 @@ class _NotificationScreenState
           label: "Undo",
           textColor: const Color(0xFF0A84FF), // iOS System Blue
           onPressed: () {
+            dismissTimer?.cancel();
             setState(() {
               _notifications.insert(index, notification);
             });
@@ -144,8 +146,18 @@ class _NotificationScreenState
       ),
     );
 
+    // Guaranteed auto-dismiss after exactly 5 seconds even if platform accessibility delays it
+    dismissTimer = Timer(const Duration(seconds: 5), () {
+      if (mounted) {
+        try {
+          snackBarController.close();
+        } catch (_) {}
+      }
+    });
+
     // Wait for the SnackBar to close
     snackBarController.closed.then((reason) async {
+      dismissTimer?.cancel();
       if (reason != SnackBarClosedReason.action) {
         // User did not click Undo - execute database deletion
         try {
@@ -159,12 +171,21 @@ class _NotificationScreenState
                 _notifications.insert(index, notification);
               }
             });
-            ScaffoldMessenger.of(context).showSnackBar(
+            ScaffoldMessenger.of(context).clearSnackBars();
+            final errorController = ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
                 content: Text("Failed to delete alert from server. Reverted."),
                 backgroundColor: Colors.red,
+                duration: Duration(seconds: 5),
               ),
             );
+            Timer(const Duration(seconds: 5), () {
+              if (mounted) {
+                try {
+                  errorController.close();
+                } catch (_) {}
+              }
+            });
           }
         }
       }
@@ -223,12 +244,14 @@ class _NotificationScreenState
       if (!success) throw Exception();
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        ScaffoldMessenger.of(context).clearSnackBars();
+        final successController = ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: const Text(
               "All alerts cleared successfully",
               style: TextStyle(color: Colors.white),
             ),
+            duration: const Duration(seconds: 5),
             backgroundColor: const Color(0xFF1C1C1E),
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
@@ -237,6 +260,13 @@ class _NotificationScreenState
             ),
           ),
         );
+        Timer(const Duration(seconds: 5), () {
+          if (mounted) {
+            try {
+              successController.close();
+            } catch (_) {}
+          }
+        });
       }
     } catch (e) {
       debugPrint("Clear all notifications error: $e");
@@ -244,12 +274,21 @@ class _NotificationScreenState
         setState(() {
           _notifications = previousList;
         });
-        ScaffoldMessenger.of(context).showSnackBar(
+        ScaffoldMessenger.of(context).clearSnackBars();
+        final errorController = ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text("Failed to clear alerts from server. Reverted."),
             backgroundColor: Colors.red,
+            duration: Duration(seconds: 5),
           ),
         );
+        Timer(const Duration(seconds: 5), () {
+          if (mounted) {
+            try {
+              errorController.close();
+            } catch (_) {}
+          }
+        });
       }
     }
   }
@@ -293,9 +332,12 @@ class _NotificationScreenState
               ? const Center(
                   child: Text("No notifications"),
                 )
-              : Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+              : Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 850),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
                     const Padding(
                       padding: EdgeInsets.fromLTRB(16, 12, 16, 4),
                       child: Row(
@@ -374,7 +416,7 @@ class _NotificationScreenState
                                           padding: const EdgeInsets.all(4),
                                           decoration: BoxDecoration(
                                             shape: BoxShape.circle,
-                                            color: n.isRead ? Colors.grey.withOpacity(0.2) : const Color(0xFFFF453A),
+                                            color: n.isRead ? const Color(0x338E8E93) : const Color(0xFFFF453A),
                                           ),
                                           child: const Icon(
                                             Icons.notifications,
@@ -425,6 +467,8 @@ class _NotificationScreenState
                     ),
                   ],
                 ),
+              ),
+            ),
     );
   }
 }

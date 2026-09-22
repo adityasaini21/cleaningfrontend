@@ -191,6 +191,9 @@ class _AdminDashboardScreenState
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final crossAxisCount = screenWidth >= 900 ? 4 : (screenWidth >= 600 ? 3 : 2);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text("Admin Panel"),
@@ -205,40 +208,43 @@ class _AdminDashboardScreenState
         ],
       ),
 
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 20),
+      body: SingleChildScrollView(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 900),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    "Welcome, Admin",
+                    style: TextStyle(
+                      fontSize: 24, // Matches target screen header proportions
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
 
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+                  const SizedBox(height: 6),
 
-            const Text(
-              "Welcome, Admin",
-              style: TextStyle(
-                fontSize: 24, // Matches target screen header proportions
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+                  const Text(
+                    "Manage your NuKlean business",
+                    style: TextStyle(
+                      fontSize: 14, // Matches target body subtext proportions
+                      color: Colors.grey,
+                    ),
+                  ),
 
-            const SizedBox(height: 6),
+                  const SizedBox(height: 24),
 
-            const Text(
-              "Manage your Prem Chemicals business",
-              style: TextStyle(
-                fontSize: 14, // Matches target body subtext proportions
-                color: Colors.grey,
-              ),
-            ),
-
-            const SizedBox(height: 24),
-
-            GridView.count(
-              shrinkWrap: true,
-              crossAxisCount: 2,
-              crossAxisSpacing: 16,
-              mainAxisSpacing: 16,
-
-              children: [
+                  GridView.count(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    crossAxisCount: crossAxisCount,
+                    crossAxisSpacing: 16,
+                    mainAxisSpacing: 16,
+                    childAspectRatio: crossAxisCount >= 3 ? 1.3 : 1.1,
+                    children: [
 
                 _buildAdminCard(
                   icon: Icons.people,
@@ -367,8 +373,6 @@ class _AdminDashboardScreenState
                     Switch(
                       value: !_serviceSuspended,
                       activeColor: Colors.green,
-                      inactiveThumbColor: Colors.red,
-                      inactiveTrackColor: Colors.red.withOpacity(0.3),
                       onChanged: (val) {
                         _toggleServiceStatus(!val);
                       },
@@ -377,7 +381,10 @@ class _AdminDashboardScreenState
                 ),
               ),
             ),
-          ],
+                ],
+              ),
+            ),
+          ),
         ),
       ),
     );

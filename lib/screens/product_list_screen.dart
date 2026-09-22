@@ -69,16 +69,23 @@ class _ProductListScreenState
 
   void _applySearchFilter() {
     final query = _searchController.text.trim().toLowerCase();
+    List<Product> list;
     if (query.isEmpty) {
-      _products = List.from(_allProducts);
+      list = List.from(_allProducts);
     } else {
-      _products = _allProducts.where((p) {
+      list = _allProducts.where((p) {
         final nameMatch = p.name.toLowerCase().contains(query);
         final descMatch = p.description.toLowerCase().contains(query);
         final categoryMatch = p.categoryName.toLowerCase().contains(query);
         return nameMatch || descMatch || categoryMatch;
       }).toList();
     }
+    list.sort((a, b) {
+      if (a.isLive && !b.isLive) return -1;
+      if (!a.isLive && b.isLive) return 1;
+      return 0;
+    });
+    _products = list;
   }
 
   void _onSearchChanged(String query) {
@@ -144,15 +151,17 @@ class _ProductListScreenState
   // =========================================
 
   Future<void> _loadProducts() async {
-
     try {
-
       setState(() {
         _isLoading = true;
       });
 
-      final products =
-      await _service.fetchProducts(0);
+      final List<Product> products;
+      if (_selectedCategoryName == null) {
+        products = await _service.fetchProducts(0);
+      } else {
+        products = await _service.fetchProductsByCategory(_selectedCategoryName!);
+      }
 
       if (!mounted) return;
 
@@ -170,7 +179,6 @@ class _ProductListScreenState
       });
 
     } catch (e) {
-
       debugPrint("LOAD PRODUCT ERROR: $e");
 
       if (!mounted) return;
@@ -179,9 +187,7 @@ class _ProductListScreenState
         _isLoading = false;
       });
 
-      ScaffoldMessenger.of(context)
-          .showSnackBar(
-
+      ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
             "Failed to load products\n$e",
@@ -196,11 +202,8 @@ class _ProductListScreenState
   // =========================================
 
   Future<void> _loadCategories() async {
-
     try {
-
-      final categories =
-      await _service.fetchCategories();
+      final categories = await _service.fetchCategories();
 
       if (!mounted) return;
 
@@ -209,7 +212,6 @@ class _ProductListScreenState
       });
 
     } catch (e) {
-
       debugPrint("CATEGORY ERROR: $e");
     }
   }
@@ -218,57 +220,9 @@ class _ProductListScreenState
   // FILTER PRODUCTS
   // =========================================
 
-  Future<void> _filterProducts(
-      String? category) async {
-
-    setState(() {
-
-      _selectedCategoryName = category;
-
-      _isLoading = true;
-    });
-
-    try {
-
-      if (category == null) {
-
-        final products =
-        await _service.fetchProducts(0);
-
-        if (!mounted) return;
-
-        setState(() {
-          _allProducts = products;
-          _applySearchFilter();
-          _isLoading = false;
-        });
-
-      } else {
-
-        final filtered =
-        await _service
-            .fetchProductsByCategory(
-            category);
-
-        if (!mounted) return;
-
-        setState(() {
-          _allProducts = filtered;
-          _applySearchFilter();
-          _isLoading = false;
-        });
-      }
-
-    } catch (e) {
-
-      debugPrint("FILTER ERROR: $e");
-
-      if (!mounted) return;
-
-      setState(() {
-        _isLoading = false;
-      });
-    }
+  Future<void> _filterProducts(String? category) async {
+    _selectedCategoryName = category;
+    await _loadProducts();
   }
 
   // =========================================
@@ -590,27 +544,72 @@ class _ProductListScreenState
           children: [
             // Image Container with light gray platform/background
             Expanded(
-              child: Container(
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF2C2C2E),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: CachedNetworkImage(
-                    imageUrl: p.imageUrl,
-                    fit: BoxFit.contain,
-                    memCacheWidth: 500,
-                    memCacheHeight: 500,
-                    fadeInDuration: Duration.zero,
-                    fadeOutDuration: Duration.zero,
-                    errorWidget: (context, url, error) => const Icon(
-                      Icons.broken_image,
-                      color: Color(0xFF8E8E93),
+              child: Stack(
+                children: [
+                  Container(
+                    width: double.infinity,
+                    height: double.infinity,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF2C2C2E),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Opacity(
+                        opacity: p.isComingSoon ? 0.65 : 1.0,
+                        child: CachedNetworkImage(
+                          imageUrl: p.imageUrl,
+                          fit: BoxFit.cover,
+                          width: double.infinity,
+                          height: double.infinity,
+                          memCacheWidth: 500,
+                          memCacheHeight: 500,
+                          fadeInDuration: Duration.zero,
+                          fadeOutDuration: Duration.zero,
+                          errorWidget: (context, url, error) => const Icon(
+                            Icons.broken_image,
+                            color: Color(0xFF8E8E93),
+                          ),
+                        ),
+                      ),
                     ),
                   ),
-                ),
+                  if (p.isComingSoon)
+                    Positioned(
+                      top: 6,
+                      left: 6,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF59E0B),
+                          borderRadius: BorderRadius.circular(6),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.4),
+                              blurRadius: 4,
+                              offset: const Offset(0, 1),
+                            ),
+                          ],
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.schedule, color: Colors.black, size: 10),
+                            SizedBox(width: 3),
+                            Text(
+                              "COMING SOON",
+                              style: TextStyle(
+                                color: Colors.black,
+                                fontWeight: FontWeight.w900,
+                                fontSize: 8.5,
+                                letterSpacing: 0.3,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                ],
               ),
             ),
             const SizedBox(height: 12),
@@ -620,8 +619,8 @@ class _ProductListScreenState
               namePart1,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: Color(0xFF0A84FF),
+              style: TextStyle(
+                color: p.isComingSoon ? const Color(0xFF8E8E93) : const Color(0xFF0A84FF),
                 fontWeight: FontWeight.bold,
                 fontSize: 14,
               ),
@@ -630,8 +629,8 @@ class _ProductListScreenState
               namePart2,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: p.isComingSoon ? const Color(0xFFB0B0B5) : Colors.white,
                 fontWeight: FontWeight.bold,
                 fontSize: 14,
               ),
@@ -684,11 +683,13 @@ class _ProductListScreenState
             ),
             const SizedBox(height: 8),
             
-            // Price (Green)
+            // Price (Green or Gray if coming soon)
             Text(
-              "₹${p.price.toStringAsFixed(2)} / $unitSuffix",
-              style: const TextStyle(
-                color: Color(0xFF30D158),
+              p.isComingSoon
+                  ? "₹${p.price.toStringAsFixed(2)} / $unitSuffix"
+                  : "₹${p.price.toStringAsFixed(2)} / $unitSuffix",
+              style: TextStyle(
+                color: p.isComingSoon ? const Color(0xFF8E8E93) : const Color(0xFF30D158),
                 fontWeight: FontWeight.bold,
                 fontSize: 13,
               ),
@@ -740,6 +741,38 @@ class _ProductListScreenState
                     ),
                   ),
                 ],
+              )
+            else if (p.isComingSoon)
+              SizedBox(
+                width: double.infinity,
+                height: 36,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF2C2C2E),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: const Color(0xFF3A3A3C),
+                      width: 0.8,
+                    ),
+                  ),
+                  alignment: Alignment.center,
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.lock_clock_outlined, size: 13, color: Color(0xFF8E8E93)),
+                      SizedBox(width: 5),
+                      Text(
+                        "COMING SOON",
+                        style: TextStyle(
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF8E8E93),
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               )
             else if (quantity > 0)
               Container(
@@ -1044,52 +1077,91 @@ class _ProductListScreenState
           
           // Product Grid
           Expanded(
-            child: _isLoading
-                ? GridView.builder(
+            child: Builder(
+              builder: (context) {
+                final screenWidth = MediaQuery.of(context).size.width;
+                final int crossAxisCount;
+                final double childAspectRatio;
+
+                if (screenWidth >= 1200) {
+                  crossAxisCount = 5;
+                  childAspectRatio = _isAdmin ? 0.44 : 0.52;
+                } else if (screenWidth >= 900) {
+                  crossAxisCount = 4;
+                  childAspectRatio = _isAdmin ? 0.42 : 0.50;
+                } else if (screenWidth >= 600) {
+                  crossAxisCount = 3;
+                  childAspectRatio = _isAdmin ? 0.40 : 0.48;
+                } else {
+                  crossAxisCount = 2;
+                  childAspectRatio = _isAdmin ? 0.40 : 0.48;
+                }
+
+                if (_isLoading) {
+                  return GridView.builder(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
+                      crossAxisCount: crossAxisCount,
                       mainAxisSpacing: 16,
                       crossAxisSpacing: 16,
-                      childAspectRatio: _isAdmin ? 0.44 : 0.52,
+                      childAspectRatio: childAspectRatio,
                     ),
-                    itemCount: 6,
+                    itemCount: crossAxisCount * 3,
                     itemBuilder: (context, index) => const ProductCardSkeleton(),
-                  )
-                : _products.isEmpty
-                    ? const Center(
-                        child: Text(
-                          "No Products Found",
-                          style: TextStyle(color: Color(0xFF8E8E93)),
+                  );
+                }
+
+                return RefreshIndicator(
+                  onRefresh: _loadProducts,
+                  color: const Color(0xFF0A84FF),
+                  backgroundColor: const Color(0xFF1C1C1E),
+                  child: _products.isEmpty
+                      ? ListView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          children: const [
+                            SizedBox(height: 120),
+                            Center(
+                              child: Text(
+                                "No Products Found",
+                                style: TextStyle(color: Color(0xFF8E8E93)),
+                              ),
+                            ),
+                          ],
+                        )
+                      : GridView.builder(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          cacheExtent: 1200,
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: crossAxisCount,
+                            mainAxisSpacing: 16,
+                            crossAxisSpacing: 16,
+                            childAspectRatio: childAspectRatio,
+                          ),
+                          itemCount: _products.length,
+                          itemBuilder: (context, index) {
+                            final p = _products[index];
+                            final isClickable = _isAdmin || p.isLive;
+                            return GestureDetector(
+                              onTap: isClickable
+                                  ? () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) => ProductDetailScreen(
+                                            product: p,
+                                          ),
+                                        ),
+                                      );
+                                    }
+                                  : null,
+                              child: _buildProductCard(p, index),
+                            );
+                          },
                         ),
-                      )
-                    : GridView.builder(
-                        cacheExtent: 1200,
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          mainAxisSpacing: 16,
-                          crossAxisSpacing: 16,
-                          childAspectRatio: _isAdmin ? 0.44 : 0.52,
-                        ),
-                        itemCount: _products.length,
-                        itemBuilder: (context, index) {
-                          final p = _products[index];
-                          return GestureDetector(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => ProductDetailScreen(
-                                    product: p,
-                                  ),
-                                ),
-                              );
-                            },
-                            child: _buildProductCard(p, index),
-                          );
-                        },
-                      ),
+                );
+              },
+            ),
           ),
         ],
       ),
@@ -1214,25 +1286,50 @@ class ProductSearchDelegate
         final p = filtered[index];
 
         return ListTile(
-
-          title: Text(p.name),
-
-          subtitle: Text("₹${p.price}"),
-
-          onTap: () {
-
-            Navigator.push(
-
-              context,
-
-              MaterialPageRoute(
-                builder: (_) =>
-                    ProductDetailScreen(
-                      product: p,
+          title: Text(
+            p.name,
+            style: TextStyle(
+              color: p.isComingSoon ? Colors.white70 : Colors.white,
+            ),
+          ),
+          subtitle: Text(
+            p.isComingSoon ? "₹${p.price} • Coming Soon" : "₹${p.price}",
+            style: TextStyle(
+              color: p.isComingSoon ? const Color(0xFFF59E0B) : const Color(0xFF30D158),
+              fontWeight: p.isComingSoon ? FontWeight.w600 : FontWeight.bold,
+            ),
+          ),
+          trailing: p.isComingSoon
+              ? Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF2C2C2E),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: const Color(0xFFF59E0B), width: 0.8),
+                  ),
+                  child: const Text(
+                    "COMING SOON",
+                    style: TextStyle(
+                      color: Color(0xFFF59E0B),
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
                     ),
-              ),
-            );
-          },
+                  ),
+                )
+              : const Icon(Icons.arrow_forward_ios, size: 14, color: Color(0xFF8E8E93)),
+          onTap: p.isLive
+              ? () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          ProductDetailScreen(
+                            product: p,
+                          ),
+                    ),
+                  );
+                }
+              : null,
         );
       },
     );

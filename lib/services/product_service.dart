@@ -1,7 +1,5 @@
 import 'dart:convert';
 
-import 'package:http/http.dart' as http;
-
 import '../models/category.dart';
 import '../models/product.dart';
 import 'auth_service.dart';
@@ -53,6 +51,7 @@ class ProductService {
 
         return productList
             .map((e) => Product.fromJson(e))
+            .where((p) => !_is500ml(p))
             .toList();
 
       } else {
@@ -84,7 +83,10 @@ class ProductService {
 
       if (response.statusCode == 200) {
         final List<dynamic> productList = jsonDecode(response.body);
-        return productList.map((e) => Product.fromJson(e)).toList();
+        return productList
+            .map((e) => Product.fromJson(e))
+            .where((p) => !_is500ml(p))
+            .toList();
       } else {
         throw Exception("Failed to load all products");
       }
@@ -189,6 +191,7 @@ class ProductService {
 
         return productList
             .map((e) => Product.fromJson(e))
+            .where((p) => !_is500ml(p))
             .toList();
 
       } else {
@@ -373,5 +376,17 @@ class ProductService {
         "Failed to update product",
       );
     }
+  }
+
+  bool _is500ml(Product p) {
+    final name = p.name.toLowerCase();
+    final desc = p.description.toLowerCase();
+    return name.contains('500ml') ||
+           name.contains('500 ml') ||
+           name.contains('500gm') ||
+           name.contains('500 gm') ||
+           name.contains('500g') ||
+           desc.contains('500ml') ||
+           desc.contains('500 ml');
   }
 }

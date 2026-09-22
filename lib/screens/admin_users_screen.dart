@@ -121,41 +121,45 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
         centerTitle: true,
       ),
 
-      body: Padding(
-        padding: const EdgeInsets.all(16),
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 850),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                TextField(
+                  controller: _searchController,
+                  onChanged: _onSearchChanged,
+                  textInputAction: TextInputAction.search,
+                  decoration: InputDecoration(
+                    hintText:
+                    "Search by name or phone number",
+                    prefixIcon:
+                    const Icon(Icons.search),
+                    suffixIcon:
+                    _searchController.text.isNotEmpty
+                        ? IconButton(
+                      icon:
+                      const Icon(Icons.clear),
+                      onPressed: () {
+                        _searchController.clear();
+                        _loadUsers();
+                        setState(() {});
+                      },
+                    )
+                        : null,
+                  ),
+                ),
 
-        child: Column(
-          children: [
-            TextField(
-              controller: _searchController,
-              onChanged: _onSearchChanged,
-              textInputAction: TextInputAction.search,
-              decoration: InputDecoration(
-                hintText:
-                "Search by name or phone number",
-                prefixIcon:
-                const Icon(Icons.search),
-                suffixIcon:
-                _searchController.text.isNotEmpty
-                    ? IconButton(
-                  icon:
-                  const Icon(Icons.clear),
-                  onPressed: () {
-                    _searchController.clear();
-                    _loadUsers();
-                    setState(() {});
-                  },
-                )
-                    : null,
-              ),
+                const SizedBox(height: 16),
+
+                Expanded(
+                  child: _buildUserList(),
+                ),
+              ],
             ),
-
-            const SizedBox(height: 16),
-
-            Expanded(
-              child: _buildUserList(),
-            ),
-          ],
+          ),
         ),
       ),
     );

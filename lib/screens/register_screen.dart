@@ -238,9 +238,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
               horizontal: 24,
               vertical: 16,
             ),
-            child: Form(
-              key: _formKey,
-              child: TweenAnimationBuilder<double>(
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 480),
+                child: Form(
+                  key: _formKey,
+                  child: TweenAnimationBuilder<double>(
                 tween: Tween(begin: 0.0, end: 1.0),
                 duration: const Duration(milliseconds: 650),
                 curve: Curves.easeOutCubic,
@@ -332,6 +335,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                             child: TextFormField(
                               controller: _fullNameController,
+                              keyboardType: TextInputType.text,
                               textCapitalization: TextCapitalization.words,
                               textInputAction: TextInputAction.next,
                               style: const TextStyle(fontSize: 16),
@@ -667,8 +671,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
           ),
         ),
       ),
-    );
-  }
+    ),
+  ),
+);
+}
 
   Widget _buildSectionHeader(
       String title,

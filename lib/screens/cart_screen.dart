@@ -47,10 +47,11 @@ class CartScreen extends StatelessWidget {
                 ],
               ),
             )
-
-          : Column(
-
-        children: [
+          : Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 800),
+                child: Column(
+                  children: [
 
           // =====================================
           // CART ITEMS
@@ -341,27 +342,32 @@ class CartScreen extends StatelessWidget {
                       ],
                     ),
                   ),
-                );
-              },
+                  );
+                },
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
+    ),
 
       // =====================================
       // BOTTOM CHECKOUT SECTION
       // =====================================
 
-
-
       bottomSheet: cart.items.isEmpty
           ? null
-          : Container(
-        margin: EdgeInsets.only(
-          left: 12,
-          right: 12,
-          bottom: MediaQuery.of(context).padding.bottom + 8,
-        ),
+          : Align(
+              alignment: Alignment.bottomCenter,
+              heightFactor: 1.0,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 800),
+                child: Container(
+                  margin: EdgeInsets.only(
+                    left: 12,
+                    right: 12,
+                    bottom: MediaQuery.of(context).padding.bottom + 8,
+                  ),
 
         padding: const EdgeInsets.symmetric(
           horizontal: 14,
@@ -612,7 +618,9 @@ class CartScreen extends StatelessWidget {
           ),
         ),
       ),
-    );
+    ),
+  ),
+);
   }
 
   // =========================================
