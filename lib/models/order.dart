@@ -44,10 +44,10 @@ class OrderModel {
   // 🚚 Delivery Boy Details
   final String deliveryBoyName;
   final String deliveryBoyPhone;
-
   final DateTime createdAt;
-
   final List<OrderItemModel> items;
+
+  String get orderCode => "NUK$orderId";
 
   OrderModel({
     required this.orderId,

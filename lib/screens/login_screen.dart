@@ -615,26 +615,31 @@ class _LoginScreenState extends State<LoginScreen> {
                         : Container(
                             constraints: const BoxConstraints(maxWidth: 360),
                             width: double.infinity,
-                            height: 48,
+                            height: 52,
                             child: ElevatedButton(
                               onPressed: _login,
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xFF0A84FF), // iOS System Blue
                                 foregroundColor: Colors.white,
                                 elevation: 0,
+                                padding: const EdgeInsets.symmetric(horizontal: 16),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(14),
                                 ),
                               ),
-                              child: Text(
-                                _adminLoginMode
-                                    ? "Admin Login"
-                                    : (!_otpSent
-                                        ? "Get OTP"
-                                        : (_isNewUser ? "Verify & Register" : "Verify & Sign In")),
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Text(
+                                  _adminLoginMode
+                                      ? "Admin Login"
+                                      : (!_otpSent
+                                          ? "Get OTP"
+                                          : (_isNewUser ? "Verify & Register" : "Verify & Sign In")),
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    letterSpacing: 0.2,
+                                  ),
                                 ),
                               ),
                             ),

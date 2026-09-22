@@ -96,15 +96,18 @@ class FirebaseMessagingService {
           "BODY: ${message.notification?.body}",
         );
 
-        final String title =
+        final String rawTitle =
             message.notification?.title ??
                 message.data['title']?.toString() ??
                 'Notification';
 
-        final String body =
+        final String rawBody =
             message.notification?.body ??
                 message.data['body']?.toString() ??
                 '';
+
+        final String title = _formatOrderCode(rawTitle);
+        final String body = _formatOrderCode(rawBody);
 
         await localNotificationsPlugin.show(
           id: DateTime.now()
@@ -157,5 +160,11 @@ class FirebaseMessagingService {
         "FCM TOKEN FOR TESTING: $token",
       );
     }
+  }
+
+  static String _formatOrderCode(String text) {
+    return text.replaceAllMapped(RegExp(r'Order\s*#(?!\s*NUK)(\d+)', caseSensitive: false), (match) {
+      return 'Order #NUK${match.group(1)}';
+    });
   }
 }

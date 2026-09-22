@@ -430,7 +430,7 @@ class _NotificationScreenState
                                           crossAxisAlignment: CrossAxisAlignment.start,
                                           children: [
                                             Text(
-                                              n.title,
+                                              n.formattedTitle,
                                               style: TextStyle(
                                                 fontSize: 14,
                                                 fontWeight: n.isRead ? FontWeight.normal : FontWeight.bold,
@@ -439,7 +439,7 @@ class _NotificationScreenState
                                             ),
                                             const SizedBox(height: 2),
                                             Text(
-                                              n.message,
+                                              n.formattedMessage,
                                               style: const TextStyle(
                                                 fontSize: 12,
                                                 color: Colors.white70,

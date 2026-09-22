@@ -628,7 +628,7 @@ class _AdminOrdersScreenState
                       collapsedShape: const Border(),
 
                       title: Text(
-                        "Order #${order.orderId}",
+                        "Order #${order.orderCode}",
 
                         style: const TextStyle(
                           fontWeight:

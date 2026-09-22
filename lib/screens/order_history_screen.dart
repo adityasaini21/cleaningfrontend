@@ -688,7 +688,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                     tilePadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
                     childrenPadding: const EdgeInsets.only(bottom: 6),
                     title: Text(
-                      "Order #${orders.length - index}",
+                      "Order #${order.orderCode}",
                       style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white),
                     ),
 

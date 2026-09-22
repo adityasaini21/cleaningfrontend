@@ -1019,27 +1019,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           keyboardType: TextInputType.number,
                           validator: (val) => val == null || val.trim().length != 6 ? "Valid 6-digit pincode is required" : null,
                         ),
-                        _buildDropdownField(
+                        _buildSearchableSelectField(
                           label: "State *",
                           icon: Icons.map_outlined,
                           value: _selectedState,
                           items: indiaStatesAndCities.keys.toList(),
                           validator: (val) => (val == null || val.trim().isEmpty) ? "Please select a state" : null,
-                          onChanged: !_isEditing ? null : (state) {
+                          onSelected: !_isEditing ? null : (state) {
                             setState(() {
                               _selectedState = state;
                               _selectedCity = null; // Reset city selection
                             });
                           },
                         ),
-                        _buildDropdownField(
+                        _buildSearchableSelectField(
                           label: "City *",
                           icon: Icons.location_city_outlined,
                           value: _selectedCity,
-                          placeholder: _selectedState == null ? "Choose State first" : "Select City",
+                          placeholder: _selectedState == null ? "Choose State first" : "Tap to search & select city",
                           items: _selectedState != null ? indiaStatesAndCities[_selectedState]! : [],
                           validator: (val) => (val == null || val.trim().isEmpty) ? "Please select a city" : null,
-                          onChanged: (!_isEditing || _selectedState == null) ? null : (city) {
+                          onSelected: (!_isEditing || _selectedState == null) ? null : (city) {
                             setState(() {
                               _selectedCity = city;
                             });
@@ -1273,49 +1273,253 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildDropdownField({
+  void _openSearchableSelectionModal({
+    required String title,
+    required List<String> items,
+    required String? currentValue,
+    required ValueChanged<String> onSelected,
+  }) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (modalContext) {
+        String searchQuery = "";
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            final filteredItems = items
+                .where((item) => item.toLowerCase().contains(searchQuery.toLowerCase().trim()))
+                .toList();
+
+            return Container(
+              height: MediaQuery.of(context).size.height * 0.75,
+              decoration: const BoxDecoration(
+                color: Color(0xFF1C1C1E),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                border: Border(
+                  top: BorderSide(color: Color(0xFF2C2C2E), width: 1),
+                ),
+              ),
+              child: Column(
+                children: [
+                  // Handle bar
+                  Container(
+                    margin: const EdgeInsets.only(top: 10, bottom: 8),
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade700,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+
+                  // Header
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          "Select $title",
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 17,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close, color: Colors.grey, size: 22),
+                          onPressed: () => Navigator.pop(modalContext),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Search Field
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF2C2C2E),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: TextField(
+                        autofocus: false,
+                        style: const TextStyle(color: Colors.white, fontSize: 15),
+                        decoration: InputDecoration(
+                          hintText: "Search $title...",
+                          hintStyle: const TextStyle(color: Color(0xFF8E8E93), fontSize: 14),
+                          prefixIcon: const Icon(Icons.search, color: Color(0xFF8E8E93), size: 20),
+                          border: InputBorder.none,
+                          contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                          suffixIcon: searchQuery.isNotEmpty
+                              ? IconButton(
+                                  icon: const Icon(Icons.clear, color: Colors.grey, size: 18),
+                                  onPressed: () {
+                                    setModalState(() {
+                                      searchQuery = "";
+                                    });
+                                  },
+                                )
+                              : null,
+                        ),
+                        onChanged: (val) {
+                          setModalState(() {
+                            searchQuery = val;
+                          });
+                        },
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 8),
+                  const Divider(color: Color(0xFF2C2C2E), height: 1),
+
+                  // Items List
+                  Expanded(
+                    child: filteredItems.isEmpty
+                        ? Center(
+                            child: Padding(
+                              padding: const EdgeInsets.all(24.0),
+                              child: Text(
+                                "No $title found matching \"$searchQuery\"",
+                                style: const TextStyle(color: Color(0xFF8E8E93), fontSize: 14),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                          )
+                        : ListView.separated(
+                            itemCount: filteredItems.length,
+                            separatorBuilder: (_, __) => const Divider(color: Color(0xFF2C2C2E), height: 0.5, indent: 16),
+                            itemBuilder: (context, index) {
+                              final item = filteredItems[index];
+                              final isSelected = item == currentValue;
+                              return ListTile(
+                                title: Text(
+                                  item,
+                                  style: TextStyle(
+                                    color: isSelected ? const Color(0xFF0A84FF) : Colors.white,
+                                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                    fontSize: 15,
+                                  ),
+                                ),
+                                trailing: isSelected
+                                    ? const Icon(Icons.check, color: Color(0xFF0A84FF), size: 20)
+                                    : null,
+                                onTap: () {
+                                  onSelected(item);
+                                  Navigator.pop(modalContext);
+                                },
+                              );
+                            },
+                          ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildSearchableSelectField({
     required String label,
     required IconData icon,
     required String? value,
     required List<String> items,
-    required ValueChanged<String?>? onChanged,
+    required ValueChanged<String>? onSelected,
     String? placeholder,
     bool hideBottomBorder = false,
     String? Function(String?)? validator,
   }) {
-    return Container(
-      decoration: BoxDecoration(
-        border: hideBottomBorder
-            ? null
-            : const Border(
-                bottom: BorderSide(color: Color(0xFF2C2C2E), width: 0.5),
-              ),
-      ),
-      child: DropdownButtonFormField<String>(
-        value: value,
-        validator: validator,
-        isExpanded: true,
-        dropdownColor: const Color(0xFF1C1C1E),
-        icon: const Icon(Icons.keyboard_arrow_down, color: Color(0xFF8E8E93)),
-        style: const TextStyle(color: Colors.white, fontSize: 15),
-        decoration: InputDecoration(
-          labelText: label,
-          labelStyle: const TextStyle(color: Color(0xFF8E8E93), fontSize: 14),
-          prefixIcon: Icon(icon, color: const Color(0xFF8E8E93), size: 20),
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-        ),
-        hint: placeholder != null
-            ? Text(placeholder, style: const TextStyle(color: Color(0xFF8E8E93), fontSize: 15))
-            : null,
-        items: items.map((item) {
-          return DropdownMenuItem(
-            value: item,
-            child: Text(item),
-          );
-        }).toList(),
-        onChanged: onChanged,
-      ),
+    return FormField<String>(
+      initialValue: value,
+      validator: validator,
+      builder: (state) {
+        final hasError = state.hasError;
+        final displayValue = value ?? state.value;
+        return InkWell(
+          onTap: onSelected == null
+              ? null
+              : () {
+                  _openSearchableSelectionModal(
+                    title: label.replaceAll('*', '').trim(),
+                    items: items,
+                    currentValue: displayValue,
+                    onSelected: (selected) {
+                      state.didChange(selected);
+                      onSelected(selected);
+                    },
+                  );
+                },
+          child: Container(
+            decoration: BoxDecoration(
+              border: hideBottomBorder
+                  ? null
+                  : const Border(
+                      bottom: BorderSide(color: Color(0xFF2C2C2E), width: 0.5),
+                    ),
+            ),
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(icon, color: const Color(0xFF8E8E93), size: 20),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            label,
+                            style: const TextStyle(color: Color(0xFF8E8E93), fontSize: 12),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            (displayValue != null && displayValue.isNotEmpty)
+                                ? displayValue
+                                : (placeholder ?? "Tap to search & select"),
+                            style: TextStyle(
+                              color: (displayValue != null && displayValue.isNotEmpty)
+                                  ? (_isEditing ? Colors.white : Colors.white54)
+                                  : const Color(0xFF8E8E93),
+                              fontSize: 15,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Icon(
+                      Icons.search,
+                      color: _isEditing ? const Color(0xFF0A84FF) : const Color(0xFF8E8E93),
+                      size: 18,
+                    ),
+                    const SizedBox(width: 4),
+                    const Icon(
+                      Icons.keyboard_arrow_down,
+                      color: Color(0xFF8E8E93),
+                      size: 20,
+                    ),
+                  ],
+                ),
+                if (hasError) ...[
+                  const SizedBox(height: 4),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 32),
+                    child: Text(
+                      state.errorText ?? '',
+                      style: const TextStyle(color: Colors.redAccent, fontSize: 12),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }
