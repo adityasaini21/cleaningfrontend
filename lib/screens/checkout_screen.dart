@@ -117,7 +117,11 @@ class _CheckoutScreenState
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF30D158),
                       foregroundColor: Colors.black,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      elevation: 1,
                     ),
                     onPressed: () async {
                       setDialogState(() {
@@ -149,7 +153,14 @@ class _CheckoutScreenState
                         );
                       }
                     },
-                    child: const Text("Verify Payment", style: TextStyle(fontWeight: FontWeight.bold)),
+                    child: const Text(
+                      "Verify Payment",
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
                   ),
                 ],
               ],
@@ -1017,7 +1028,7 @@ class _CheckoutScreenState
                 ],
               ),
               child: SizedBox(
-                height: 42,
+                height: 52,
                 child: ElevatedButton(
                   onPressed:
                   (_isDeliverable &&
@@ -1030,7 +1041,7 @@ class _CheckoutScreenState
                     const Color(0xFF2563EB),
                     foregroundColor:
                     Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
+                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
                     disabledBackgroundColor:
                     const Color(0xFF2563EB).withOpacity(0.24),
                     disabledForegroundColor:
@@ -1039,7 +1050,7 @@ class _CheckoutScreenState
                     RoundedRectangleBorder(
                       borderRadius:
                       BorderRadius.circular(
-                        12,
+                        14,
                       ),
                     ),
                   ),
@@ -1058,7 +1069,8 @@ class _CheckoutScreenState
                     MainAxisAlignment.center,
                     children: [
                       Icon(
-                        Icons.shopping_bag,
+                        Icons.shopping_bag_outlined,
+                        size: 20,
                       ),
                       SizedBox(width: 10),
                       Text(
@@ -1066,7 +1078,8 @@ class _CheckoutScreenState
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight:
-                          FontWeight.bold,
+                          FontWeight.w700,
+                          letterSpacing: 0.3,
                         ),
                       ),
                     ],
