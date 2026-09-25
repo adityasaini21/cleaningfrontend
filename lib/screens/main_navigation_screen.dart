@@ -611,58 +611,58 @@ class _MainNavigationScreenState
             constraints: const BoxConstraints(maxWidth: 600),
             child: Padding(
               padding: const EdgeInsets.only(
-                left: 18,
-                right: 18,
-                bottom: 14,
+                left: 16,
+                right: 16,
+                bottom: 12,
               ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(30),
-                child: Container(
-                  height: 70,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        Colors.white.withOpacity(0.12),
-                        Colors.white.withOpacity(0.06),
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(28),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.45),
+                      blurRadius: 20,
+                      offset: const Offset(0, 8),
+                      spreadRadius: 2,
                     ),
-                    borderRadius: BorderRadius.circular(30),
-                    border: Border.all(
-                      color: Colors.white.withOpacity(0.10),
-                      width: 1,
+                    BoxShadow(
+                      color: const Color(0xFF0A84FF).withValues(alpha: 0.08),
+                      blurRadius: 16,
+                      spreadRadius: -2,
                     ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.25),
-                        blurRadius: 10,
-                        offset: const Offset(0, 15),
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(28),
+                  child: Container(
+                    height: 66,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF16161A), // Deep solid premium OLED dark
+                      borderRadius: BorderRadius.circular(28),
+                      border: Border.all(
+                        color: const Color(0xFF2C2C32), // Crisp luxury border
+                        width: 1.2,
                       ),
-                      BoxShadow(
-                        color: Colors.blue.withOpacity(0.08),
-                        blurRadius: 12,
-                      ),
-                    ],
-                  ),
-                  child: Theme(
-                    data: Theme.of(context).copyWith(
-                      splashColor: Colors.transparent,
-                      highlightColor: Colors.transparent,
-                      hoverColor: Colors.transparent,
                     ),
-                    child: SalomonBottomBar(
-                      currentIndex: _currentIndex,
-                      onTap: _changeTab,
-                      margin: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 10,
+                    child: Theme(
+                      data: Theme.of(context).copyWith(
+                        splashColor: Colors.transparent,
+                        highlightColor: Colors.transparent,
+                        hoverColor: Colors.transparent,
                       ),
-                      itemPadding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 8,
+                      child: SalomonBottomBar(
+                        currentIndex: _currentIndex,
+                        onTap: _changeTab,
+                        margin: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 6,
+                        ),
+                        itemPadding: const EdgeInsets.symmetric(
+                          horizontal: 11,
+                          vertical: 8,
+                        ),
+                        items: _isAdmin ? adminItems : userItems,
                       ),
-                      items: _isAdmin ? adminItems : userItems,
                     ),
                   ),
                 ),

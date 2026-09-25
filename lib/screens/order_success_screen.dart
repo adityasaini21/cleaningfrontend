@@ -31,16 +31,32 @@ class OrderSuccessScreen extends StatelessWidget {
             const SizedBox(height: 30),
 
             ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF007AFF),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 2,
+              ),
               onPressed: () {
                 Navigator.pushAndRemoveUntil(
                   context,
                   MaterialPageRoute(
                     builder: (_) => const MainNavigationScreen(),
                   ),
-                      (route) => false,
+                  (route) => false,
                 );
               },
-              child: const Text("Continue Shopping"),
+              child: const Text(
+                "Continue Shopping",
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.3,
+                ),
+              ),
             ),
           ],
         ),

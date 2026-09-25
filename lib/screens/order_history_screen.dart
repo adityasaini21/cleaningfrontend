@@ -160,10 +160,21 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
             ),
 
             ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFFF453A),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+              ),
               onPressed: () {
                 Navigator.pop(context, true);
               },
-              child: const Text("Yes"),
+              child: const Text(
+                "Yes",
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
             ),
           ],
         );
@@ -254,25 +265,36 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
     if (status == "CANCELLED") {
 
       return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
 
           const SizedBox(height: 10),
 
-          LinearProgressIndicator(
-            value: 0.3,
-            color: Colors.red,
-            backgroundColor:
-            Colors.grey.shade300,
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: const LinearProgressIndicator(
+              value: 1.0,
+              minHeight: 4,
+              color: Color(0xFFFF453A),
+              backgroundColor: Color(0xFF2C2C2E),
+            ),
           ),
 
-          const SizedBox(height: 6),
+          const SizedBox(height: 8),
 
-          const Text(
-            "Order Cancelled",
-            style: TextStyle(
-              color: Colors.red,
-              fontWeight: FontWeight.bold,
-            ),
+          const Row(
+            children: [
+              Icon(Icons.cancel, size: 14, color: Color(0xFFFF453A)),
+              SizedBox(width: 6),
+              Text(
+                "Order Cancelled",
+                style: TextStyle(
+                  color: Color(0xFFFF453A),
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                ),
+              ),
+            ],
           ),
         ],
       );
@@ -706,6 +728,24 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                             fontSize: 11,
                             fontWeight: FontWeight.bold,
                             color: Color(0xFF30D158),
+                          ),
+                        )
+                      else if (order.orderStatus == "DELIVERED")
+                        const Text(
+                          "Delivered - package handed over successfully!",
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF30D158),
+                          ),
+                        )
+                      else if (order.orderStatus == "CANCELLED")
+                        const Text(
+                          "Cancelled - this order has been cancelled",
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFFFF453A),
                           ),
                         )
                       else ...[

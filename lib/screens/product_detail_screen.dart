@@ -366,6 +366,14 @@ class _ProductDetailScreenState
 
                 ElevatedButton(
 
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF007AFF),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+                  ),
                   onPressed: () async {
 
                     try {

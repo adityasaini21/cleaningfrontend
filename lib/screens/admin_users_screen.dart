@@ -195,8 +195,19 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
             const SizedBox(height: 16),
 
             ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF007AFF),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
               onPressed: _loadUsers,
-              child: const Text("Retry"),
+              child: const Text(
+                "Retry",
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
             ),
           ],
         ),
