@@ -1117,44 +1117,21 @@ class _ProductDetailScreenState
                   // STOCK
                   // =====================================
 
-                  _isAdmin
+                  if (_isAdmin)
+                    TextField(
 
-                      ? TextField(
+                      controller:
+                      _stockController,
 
-                    controller:
-                    _stockController,
+                      keyboardType:
+                      TextInputType.number,
 
-                    keyboardType:
-                    TextInputType.number,
-
-                    decoration:
-                    const InputDecoration(
-                      labelText:
-                      "Stock",
+                      decoration:
+                      const InputDecoration(
+                        labelText:
+                        "Stock",
+                      ),
                     ),
-                  )
-
-                      : Text(
-
-                    widget.product.stock > 0
-
-                        ? "In Stock (${widget.product.stock})"
-
-                        : "Out of Stock",
-
-                    style: TextStyle(
-
-                      fontSize: 14,
-
-                      color:
-                      widget.product.stock > 0
-                          ? Colors.green
-                          : Colors.red,
-
-                      fontWeight:
-                      FontWeight.bold,
-                    ),
-                  ),
 
                   const SizedBox(height: 16),
 

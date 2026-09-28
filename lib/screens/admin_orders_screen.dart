@@ -779,24 +779,95 @@ class _AdminOrdersScreenState
                                 const SizedBox(height: 12),
                               ],
 
-                              Row(
-                                children: [
+                              if (order.phoneNumber.contains("| Acct:") || order.phoneNumber.contains("(Alt)")) ...[
+                                Builder(
+                                  builder: (context) {
+                                    final parts = order.phoneNumber.split("| Acct:");
+                                    final deliveryPhone = parts[0].replaceAll("(Alt)", "").trim();
+                                    final accountPhone = parts.length > 1 ? parts[1].trim() : "";
 
-                                  const Icon(
-                                    Icons.phone,
-                                    size: 18,
-                                    color: Colors.green,
-                                  ),
+                                    return Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            const Icon(
+                                              Icons.phone_in_talk,
+                                              size: 18,
+                                              color: Color(0xFF30D158),
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                  Row(
+                                                    children: [
+                                                      Text(
+                                                        deliveryPhone,
+                                                        style: const TextStyle(
+                                                          fontWeight: FontWeight.bold,
+                                                          color: Colors.white,
+                                                        ),
+                                                      ),
+                                                      const SizedBox(width: 6),
+                                                      Container(
+                                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                                        decoration: BoxDecoration(
+                                                          color: const Color(0xFF30D158).withOpacity(0.15),
+                                                          borderRadius: BorderRadius.circular(4),
+                                                          border: Border.all(color: const Color(0xFF30D158), width: 0.5),
+                                                        ),
+                                                        child: const Text(
+                                                          "Call for Delivery",
+                                                          style: TextStyle(
+                                                            color: Color(0xFF30D158),
+                                                            fontSize: 10,
+                                                            fontWeight: FontWeight.bold,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                  if (accountPhone.isNotEmpty) ...[
+                                                    const SizedBox(height: 3),
+                                                    Text(
+                                                      "Account Phone: $accountPhone",
+                                                      style: const TextStyle(
+                                                        color: Color(0xFF8E8E93),
+                                                        fontSize: 12,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ],
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    );
+                                  },
+                                ),
+                              ] else ...[
+                                Row(
+                                  children: [
 
-                                  const SizedBox(width: 8),
-
-                                  Expanded(
-                                    child: Text(
-                                      order.phoneNumber,
+                                    const Icon(
+                                      Icons.phone,
+                                      size: 18,
+                                      color: Colors.green,
                                     ),
-                                  ),
-                                ],
-                              ),
+
+                                    const SizedBox(width: 8),
+
+                                    Expanded(
+                                      child: Text(
+                                        order.phoneNumber,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
 
                               const SizedBox(height: 12),
 

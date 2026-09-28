@@ -31,7 +31,10 @@ class _CheckoutScreenState
   final OrderService _orderService =
   OrderService();
 
-  String _paymentMethod = "ONLINE";
+  String _originalAccountPhone = "";
+  bool _isEditingPhone = false;
+
+  String _paymentMethod = "COD";
 
   bool _loading = false;
 
@@ -215,9 +218,16 @@ class _CheckoutScreenState
       _loading = true;
     });
 
+    final enteredPhone = _phoneController.text.trim();
+    String finalPhoneNumber = enteredPhone;
+    if (_originalAccountPhone.isNotEmpty &&
+        enteredPhone != _originalAccountPhone) {
+      finalPhoneNumber = "$enteredPhone (Alt) | Acct: $_originalAccountPhone";
+    }
+
     final orderId = await _orderService.placeOrder(
       shippingAddress: _addressController.text,
-      phoneNumber: _phoneController.text,
+      phoneNumber: finalPhoneNumber,
       pincode: _pincodeController.text,
       paymentMethod: _paymentMethod,
       items: cart.items,
@@ -402,6 +412,8 @@ class _CheckoutScreenState
         
         final phone = AuthService().getUsernameFromToken() ?? '';
         _phoneController.text = phone;
+        _originalAccountPhone = phone.trim();
+        _isEditingPhone = false;
         
         if (profile.pincode != null && profile.pincode!.isNotEmpty) {
           _pincodeController.text = profile.pincode!;
@@ -428,6 +440,8 @@ class _CheckoutScreenState
     _addressController.clear();
     _phoneController.clear();
     _pincodeController.clear();
+    _originalAccountPhone = "";
+    _isEditingPhone = false;
     setState(() {
       _isDeliverable = false;
       _deliveryCharge = 0.0;
@@ -530,19 +544,103 @@ class _CheckoutScreenState
                   TextField(
                     controller: _phoneController,
                     keyboardType: TextInputType.phone,
-                    readOnly: true,
-                    style: const TextStyle(color: Color(0xFF8E8E93), fontSize: 13),
+                    readOnly: !_isEditingPhone,
+                    style: TextStyle(
+                      color: _isEditingPhone ? Colors.white : const Color(0xFF8E8E93),
+                      fontSize: 13,
+                      fontWeight: _isEditingPhone ? FontWeight.w600 : FontWeight.normal,
+                    ),
                     decoration: InputDecoration(
                       isDense: true,
                       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                      labelText: "Phone Number",
-                      labelStyle: const TextStyle(color: Color(0xFF8E8E93), fontSize: 13),
-                      prefixIcon: const Icon(Icons.phone, color: Color(0xFF8E8E93), size: 18),
+                      labelText: _isEditingPhone
+                          ? "Alternate Phone Number (For this delivery)"
+                          : "Phone Number",
+                      labelStyle: TextStyle(
+                        color: _isEditingPhone ? const Color(0xFF0A84FF) : const Color(0xFF8E8E93),
+                        fontSize: 13,
+                      ),
+                      prefixIcon: Icon(
+                        Icons.phone,
+                        color: _isEditingPhone ? const Color(0xFF0A84FF) : const Color(0xFF8E8E93),
+                        size: 18,
+                      ),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _isEditingPhone ? Icons.check_circle : Icons.edit,
+                          color: _isEditingPhone ? const Color(0xFF30D158) : const Color(0xFF0A84FF),
+                          size: 20,
+                        ),
+                        tooltip: _isEditingPhone ? "Done Editing" : "Change Delivery Phone Number",
+                        onPressed: () {
+                          setState(() {
+                            if (_isEditingPhone) {
+                              _isEditingPhone = false;
+                            } else {
+                              if (_originalAccountPhone.isEmpty) {
+                                _originalAccountPhone = _phoneController.text.trim();
+                              }
+                              _isEditingPhone = true;
+                            }
+                          });
+                        },
+                      ),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide(
+                          color: _isEditingPhone ? const Color(0xFF0A84FF) : const Color(0xFF2C2C2E),
+                        ),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: const BorderSide(
+                          color: Color(0xFF0A84FF),
+                          width: 1.5,
+                        ),
                       ),
                     ),
                   ),
+
+                  if (_originalAccountPhone.isNotEmpty &&
+                      _phoneController.text.trim().isNotEmpty &&
+                      _phoneController.text.trim() != _originalAccountPhone) ...[
+                    const SizedBox(height: 6),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.info_outline, color: Color(0xFF30D158), size: 14),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              "Alternate call number active (Account: $_originalAccountPhone)",
+                              style: const TextStyle(
+                                color: Color(0xFF30D158),
+                                fontSize: 11,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                          InkWell(
+                            onTap: () {
+                              setState(() {
+                                _phoneController.text = _originalAccountPhone;
+                                _isEditingPhone = false;
+                              });
+                            },
+                            child: const Text(
+                              "Reset",
+                              style: TextStyle(
+                                color: Color(0xFF0A84FF),
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
 
                   const SizedBox(height: 10),
 
@@ -574,7 +672,7 @@ class _CheckoutScreenState
                         SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            "To change your address, pincode or phone number, please update them in your Profile screen.",
+                            "Tap the edit icon next to Phone Number if someone else is receiving this delivery.",
                             style: TextStyle(
                               color: Color(0xFF8E8E93),
                               fontSize: 12,
@@ -705,53 +803,77 @@ class _CheckoutScreenState
 
                   const SizedBox(height: 14),
                   
-                  // PhonePe Online Option
+                  // PhonePe Online Option (Coming Soon)
                   GestureDetector(
                     onTap: () {
-                      setState(() {
-                        _paymentMethod = "ONLINE";
-                      });
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text("Online payment (UPI / Cards) will be available soon! Please use Cash on Delivery for now."),
+                          duration: Duration(seconds: 2),
+                        ),
+                      );
                     },
                     child: Container(
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
-                        color: _paymentMethod == "ONLINE"
-                            ? const Color(0xFF1C1C1E)
-                            : Colors.transparent,
+                        color: Colors.white.withValues(alpha: 0.03),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: _paymentMethod == "ONLINE"
-                              ? const Color(0xFF30D158)
-                              : const Color(0xFF2C2C2E),
-                          width: _paymentMethod == "ONLINE" ? 1.5 : 0.5,
+                          color: const Color(0xFF2C2C2E),
+                          width: 0.5,
                         ),
                       ),
                       child: Row(
                         children: [
                           Icon(
                             Icons.account_balance_wallet,
-                            color: _paymentMethod == "ONLINE"
-                                ? const Color(0xFF30D158)
-                                : const Color(0xFF8E8E93),
+                            color: Colors.grey.shade600,
                           ),
                           const SizedBox(width: 12),
-                          const Expanded(
+                          Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
-                                  "Pay Online (PhonePe)",
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                    fontSize: 14,
-                                  ),
+                                Row(
+                                  children: [
+                                    Text(
+                                      "Pay Online",
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.grey.shade400,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 6,
+                                        vertical: 2,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFFF9F0A).withValues(alpha: 0.15),
+                                        borderRadius: BorderRadius.circular(4),
+                                        border: Border.all(
+                                          color: const Color(0xFFFF9F0A),
+                                          width: 0.5,
+                                        ),
+                                      ),
+                                      child: const Text(
+                                        "Coming Soon",
+                                        style: TextStyle(
+                                          color: Color(0xFFFF9F0A),
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                                SizedBox(height: 2),
+                                const SizedBox(height: 2),
                                 Text(
                                   "UPI, Cards, Netbanking & Wallets",
                                   style: TextStyle(
-                                    color: Color(0xFF8E8E93),
+                                    color: Colors.grey.shade600,
                                     fontSize: 12,
                                   ),
                                 ),
@@ -761,12 +883,8 @@ class _CheckoutScreenState
                           Radio<String>(
                             value: "ONLINE",
                             groupValue: _paymentMethod,
-                            activeColor: const Color(0xFF30D158),
-                            onChanged: (val) {
-                              setState(() {
-                                _paymentMethod = val!;
-                              });
-                            },
+                            activeColor: Colors.grey,
+                            onChanged: null, // Disabled
                           ),
                         ],
                       ),
