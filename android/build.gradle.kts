@@ -6,6 +6,17 @@ allprojects {
 
         mavenCentral()
     }
+
+    configurations.all {
+        resolutionStrategy {
+            force("androidx.datastore:datastore-core:1.2.0")
+            force("androidx.datastore:datastore-preferences:1.2.0")
+            force("androidx.datastore:datastore:1.2.0")
+            force("androidx.datastore:datastore-core-android:1.2.0")
+            force("androidx.datastore:datastore-preferences-core:1.2.0")
+            force("androidx.datastore:datastore-preferences-android:1.2.0")
+        }
+    }
 }
 
 buildscript {

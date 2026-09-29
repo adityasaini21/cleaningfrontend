@@ -1,5 +1,9 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:http/http.dart' as http;
+import 'package:geolocator/geolocator.dart';
+import 'package:geocoding/geocoding.dart';
 import '../services/auth_service.dart';
 import '../services/profile_service.dart';
 import '../services/cart_provider.dart';
@@ -32,6 +36,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   bool _isLoading = true;
   bool _isSaving = false;
+  bool _isLocating = false;
   bool _isEditing = false; // Controls forms enablement
 
   UserProfile? _initialProfile; // Tracks original state to check if user made any edits
@@ -210,6 +215,326 @@ class _ProfileScreenState extends State<ProfileScreen> {
         SnackBar(
           content: Text(success ? "Profile saved successfully! You can now browse and place orders." : "Failed to update profile"),
           backgroundColor: success ? Colors.green : Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _useCurrentLocation() async {
+    setState(() {
+      _isLocating = true;
+      if (!_isEditing) {
+        _isEditing = true;
+      }
+    });
+
+    try {
+      // 1. Check if location service is enabled
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Location services (GPS) are turned off. Please enable GPS on your device."),
+            backgroundColor: Colors.orangeAccent,
+          ),
+        );
+        setState(() => _isLocating = false);
+        return;
+      }
+
+      // 2. Check and request location permissions
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("Location permission denied. You can enter your address manually."),
+              backgroundColor: Colors.orangeAccent,
+            ),
+          );
+          setState(() => _isLocating = false);
+          return;
+        }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Location permission is permanently denied. Please allow it in settings or type address manually."),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+        setState(() => _isLocating = false);
+        return;
+      }
+
+      // 3. Retrieve GPS Coordinates with Best Accuracy
+      Position? position;
+      try {
+        position = await Geolocator.getCurrentPosition(
+          locationSettings: const LocationSettings(
+            accuracy: LocationAccuracy.best,
+            timeLimit: Duration(seconds: 15),
+          ),
+        );
+      } catch (_) {
+        position = await Geolocator.getLastKnownPosition();
+      }
+
+      if (position == null) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Could not retrieve GPS position. Please enter your address manually."),
+            backgroundColor: Colors.orangeAccent,
+          ),
+        );
+        setState(() => _isLocating = false);
+        return;
+      }
+
+      // 4. Reverse Geocoding with native OS Geocoder + OpenStreetMap Fallback
+      String detectedAddress = "";
+      String detectedLandmark = "";
+      String detectedPincode = "";
+      String detectedState = "";
+      String detectedCity = "";
+
+      try {
+        final placemarks = await Geocoding().placemarkFromCoordinates(position.latitude, position.longitude);
+        if (placemarks.isNotEmpty) {
+          final p = placemarks.first;
+          final rawAddressParts = <String>[
+            p.subThoroughfare ?? "",
+            p.thoroughfare ?? "",
+            p.street ?? "",
+          ];
+          final addressParts = <String>[];
+          for (var part in rawAddressParts) {
+            final trimmed = part.trim();
+            if (trimmed.isNotEmpty &&
+                !addressParts.any((existing) =>
+                    existing.toLowerCase() == trimmed.toLowerCase() ||
+                    existing.toLowerCase().contains(trimmed.toLowerCase()))) {
+              addressParts.add(trimmed);
+            }
+          }
+
+          detectedAddress = addressParts.join(", ");
+          final landmarkParts = <String>[
+            p.subLocality ?? "",
+            p.locality ?? "",
+          ].where((s) => s.trim().isNotEmpty).toSet().toList();
+
+          detectedLandmark = landmarkParts.isNotEmpty ? landmarkParts.first : (p.name ?? "");
+          detectedPincode = p.postalCode ?? "";
+          detectedState = p.administrativeArea ?? "";
+          detectedCity = p.locality ?? p.subAdministrativeArea ?? "";
+        }
+      } catch (geoError) {
+        debugPrint("Native geocoder fallback triggered: $geoError");
+      }
+
+      // Free OpenStreetMap Nominatim Fallback if native geocoder returned empty
+      if (detectedAddress.isEmpty || detectedState.isEmpty) {
+        try {
+          final uri = Uri.parse(
+            "https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${position.latitude}&lon=${position.longitude}&zoom=18&addressdetails=1",
+          );
+          final res = await http.get(uri, headers: {
+            "User-Agent": "NuKleanApp/1.0",
+            "Accept-Language": "en",
+          });
+          if (res.statusCode == 200) {
+            final data = jsonDecode(res.body);
+            final address = data["address"] as Map<String, dynamic>?;
+            if (address != null) {
+              final road = address["road"] ?? address["suburb"] ?? address["neighbourhood"] ?? "";
+              final houseNumber = address["house_number"] ?? "";
+              final osmAddr = [houseNumber, road].where((s) => s.toString().trim().isNotEmpty).join(", ");
+              if (detectedAddress.isEmpty && osmAddr.isNotEmpty) {
+                detectedAddress = osmAddr;
+              }
+              if (detectedLandmark.isEmpty) {
+                detectedLandmark = (address["suburb"] ?? address["neighbourhood"] ?? address["city_district"] ?? "").toString();
+              }
+              if (detectedPincode.isEmpty) {
+                detectedPincode = (address["postcode"] ?? "").toString();
+              }
+              if (detectedState.isEmpty) {
+                detectedState = (address["state"] ?? "").toString();
+              }
+              if (detectedCity.isEmpty) {
+                detectedCity = (address["city"] ?? address["town"] ?? address["village"] ?? address["state_district"] ?? address["county"] ?? "").toString();
+              }
+            }
+          }
+        } catch (osmError) {
+          debugPrint("OSM reverse geocoding error: $osmError");
+        }
+      }
+
+      // 5. Match detected state and city against indiaStatesAndCities Map strictly
+      String normalize(String s) => s.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+
+      final stateAliases = <String, String>{
+        "up": "Uttar Pradesh",
+        "uttarpradesh": "Uttar Pradesh",
+        "mp": "Madhya Pradesh",
+        "madhyapradesh": "Madhya Pradesh",
+        "delhi": "Delhi",
+        "newdelhi": "Delhi",
+        "nct": "Delhi",
+        "nctofdelhi": "Delhi",
+        "nationalcapitalterritoryofdelhi": "Delhi",
+        "maharashtra": "Maharashtra",
+        "mh": "Maharashtra",
+        "rajasthan": "Rajasthan",
+        "rj": "Rajasthan",
+        "haryana": "Haryana",
+        "hr": "Haryana",
+        "punjab": "Punjab",
+        "pb": "Punjab",
+        "gujarat": "Gujarat",
+        "gj": "Gujarat",
+        "bihar": "Bihar",
+        "br": "Bihar",
+        "westbengal": "West Bengal",
+        "wb": "West Bengal",
+        "tamilnadu": "Tamil Nadu",
+        "tn": "Tamil Nadu",
+        "karnataka": "Karnataka",
+        "ka": "Karnataka",
+        "telangana": "Telangana",
+        "ts": "Telangana",
+        "andhrapradesh": "Andhra Pradesh",
+        "ap": "Andhra Pradesh",
+        "kerala": "Kerala",
+        "kl": "Kerala",
+        "uttarakhand": "Uttarakhand",
+        "uk": "Uttarakhand",
+        "ua": "Uttarakhand",
+        "uttaranchal": "Uttarakhand",
+        "odisha": "Odisha",
+        "orissa": "Odisha",
+        "chhattisgarh": "Chhattisgarh",
+        "cg": "Chhattisgarh",
+        "jharkhand": "Jharkhand",
+        "jh": "Jharkhand",
+        "assam": "Assam",
+        "as": "Assam",
+        "himachalpradesh": "Himachal Pradesh",
+        "hp": "Himachal Pradesh",
+        "jammuandkashmir": "Jammu and Kashmir",
+        "jk": "Jammu and Kashmir",
+        "chandigarh": "Chandigarh",
+        "goa": "Goa",
+      };
+
+      String? matchedState;
+      final normDetectedState = normalize(detectedState);
+
+      if (stateAliases.containsKey(normDetectedState)) {
+        matchedState = stateAliases[normDetectedState];
+      }
+
+      if (matchedState == null && normDetectedState.isNotEmpty) {
+        for (var stateKey in indiaStatesAndCities.keys) {
+          if (normalize(stateKey) == normDetectedState) {
+            matchedState = stateKey;
+            break;
+          }
+        }
+      }
+
+      if (matchedState == null && detectedState.isNotEmpty) {
+        for (var stateKey in indiaStatesAndCities.keys) {
+          if (detectedState.toLowerCase().contains(stateKey.toLowerCase())) {
+            matchedState = stateKey;
+            break;
+          }
+        }
+      }
+
+      String? matchedCity;
+      if (matchedState != null) {
+        final citiesList = indiaStatesAndCities[matchedState] ?? [];
+        final normDetectedCity = normalize(detectedCity);
+        final cityCandidates = [detectedCity, detectedLandmark, detectedAddress]
+            .where((s) => s.trim().isNotEmpty)
+            .map((s) => normalize(s))
+            .toList();
+
+        for (var cityItem in citiesList) {
+          final normCity = normalize(cityItem);
+          if (normCity == normDetectedCity) {
+            matchedCity = cityItem;
+            break;
+          }
+        }
+
+        if (matchedCity == null) {
+          for (var cityItem in citiesList) {
+            final normCity = normalize(cityItem);
+            if (normCity.length >= 4) {
+              for (var cand in cityCandidates) {
+                if (cand.contains(normCity) || (cand.length >= 4 && normCity.contains(cand))) {
+                  matchedCity = cityItem;
+                  break;
+                }
+              }
+            }
+            if (matchedCity != null) break;
+          }
+        }
+      }
+
+      // 6. Update text fields and state
+      if (!mounted) return;
+      setState(() {
+        if (detectedAddress.isNotEmpty) {
+          _addressController.text = detectedAddress;
+        }
+        if (detectedLandmark.isNotEmpty) {
+          _landmarkController.text = detectedLandmark;
+        }
+        final numericPincode = detectedPincode.replaceAll(RegExp(r'[^0-9]'), '');
+        if (numericPincode.length >= 6) {
+          _pincodeController.text = numericPincode.substring(0, 6);
+        } else if (numericPincode.isNotEmpty) {
+          _pincodeController.text = numericPincode;
+        }
+        if (matchedState != null) {
+          _selectedState = matchedState;
+          if (matchedCity != null) {
+            _selectedCity = matchedCity;
+          }
+        }
+        _isLocating = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            matchedCity != null && matchedState != null
+                ? "📍 Location detected: $matchedCity, $matchedState"
+                : "📍 Address details filled from GPS. Please verify.",
+          ),
+          backgroundColor: Colors.green,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLocating = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Could not auto-detect location: $e"),
+          backgroundColor: Colors.orangeAccent,
         ),
       );
     }
@@ -895,25 +1220,92 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               ),
                               if (!_isEditing) ...[
                                 const SizedBox(height: 12),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: ElevatedButton.icon(
+                                        onPressed: _isLocating ? null : _useCurrentLocation,
+                                        icon: _isLocating
+                                            ? const SizedBox(
+                                                width: 14,
+                                                height: 14,
+                                                child: CircularProgressIndicator(
+                                                  strokeWidth: 2,
+                                                  color: Colors.white,
+                                                ),
+                                              )
+                                            : const Icon(Icons.my_location, size: 16, color: Colors.white),
+                                        label: Text(
+                                          _isLocating ? "Locating..." : "Use Current Location",
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: const Color(0xFF30D158),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(10),
+                                          ),
+                                          padding: const EdgeInsets.symmetric(vertical: 10),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: OutlinedButton.icon(
+                                        onPressed: () {
+                                          setState(() {
+                                            _isEditing = true;
+                                          });
+                                        },
+                                        icon: const Icon(Icons.edit_note, size: 16, color: Color(0xFF0A84FF)),
+                                        label: const Text(
+                                          "Fill Manually",
+                                          style: TextStyle(
+                                            color: Color(0xFF0A84FF),
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                        style: OutlinedButton.styleFrom(
+                                          side: const BorderSide(color: Color(0xFF0A84FF), width: 1),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(10),
+                                          ),
+                                          padding: const EdgeInsets.symmetric(vertical: 10),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ] else ...[
+                                const SizedBox(height: 12),
                                 SizedBox(
                                   width: double.infinity,
                                   child: ElevatedButton.icon(
-                                    onPressed: () {
-                                      setState(() {
-                                        _isEditing = true;
-                                      });
-                                    },
-                                    icon: const Icon(Icons.arrow_downward, size: 16, color: Colors.white),
-                                    label: const Text(
-                                      "Tap to Fill Details ➔",
-                                      style: TextStyle(
+                                    onPressed: _isLocating ? null : _useCurrentLocation,
+                                    icon: _isLocating
+                                        ? const SizedBox(
+                                            width: 14,
+                                            height: 14,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              color: Colors.white,
+                                            ),
+                                          )
+                                        : const Icon(Icons.my_location, size: 16, color: Colors.white),
+                                    label: Text(
+                                      _isLocating ? "Detecting GPS..." : "📍 Auto-Fill with Current Location",
+                                      style: const TextStyle(
                                         color: Colors.white,
                                         fontWeight: FontWeight.bold,
                                         fontSize: 13,
                                       ),
                                     ),
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor: const Color(0xFF0A84FF),
+                                      backgroundColor: const Color(0xFF30D158),
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(10),
                                       ),
@@ -959,21 +1351,70 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                       const SizedBox(height: 20),
 
-                      // Section Title: Personal Details
-                      const Align(
-                        alignment: Alignment.centerLeft,
-                        child: Padding(
-                          padding: EdgeInsets.only(left: 8, bottom: 8),
-                          child: Text(
-                            "DELIVERY & PERSONAL DETAILS",
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.grey,
-                              letterSpacing: 1.2,
+                      // Section Title & Use Current Location Row
+                      Row(
+                        children: [
+                          const Expanded(
+                            child: Padding(
+                              padding: EdgeInsets.only(left: 4, bottom: 6),
+                              child: Text(
+                                "DELIVERY & PERSONAL DETAILS",
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.grey,
+                                  letterSpacing: 0.8,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
                           ),
-                        ),
+                          const SizedBox(width: 8),
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 6),
+                            child: InkWell(
+                              onTap: _isLocating ? null : _useCurrentLocation,
+                              borderRadius: BorderRadius.circular(8),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF30D158).withOpacity(0.12),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: const Color(0xFF30D158).withOpacity(0.3),
+                                    width: 0.5,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    if (_isLocating)
+                                      const SizedBox(
+                                        width: 12,
+                                        height: 12,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: Color(0xFF30D158),
+                                        ),
+                                      )
+                                    else
+                                      const Icon(Icons.my_location, size: 13, color: Color(0xFF30D158)),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      _isLocating ? "Locating..." : "Auto-Fill Location",
+                                      style: const TextStyle(
+                                        color: Color(0xFF30D158),
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 11,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
 
                       // Grouped Input Fields Card (iOS Rounded Style)
@@ -1434,8 +1875,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     String? Function(String?)? validator,
   }) {
     return FormField<String>(
+      key: ValueKey("${label}_${value ?? ''}"),
       initialValue: value,
-      validator: validator,
+      validator: (val) => validator?.call(value ?? val),
       builder: (state) {
         final hasError = state.hasError;
         final displayValue = value ?? state.value;

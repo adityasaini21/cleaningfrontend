@@ -654,12 +654,11 @@ class _AdminOrdersScreenState
                           const SizedBox(height: 6),
 
                           Text(
-                            "₹${order.totalAmount}",
-
-                            style:
-                            const TextStyle(
-                              fontWeight:
-                              FontWeight.bold,
+                            "Total Amount: ₹${order.totalAmount.toStringAsFixed(2)}",
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                              color: Color(0xFF30D158),
                             ),
                           ),
 
@@ -933,6 +932,27 @@ class _AdminOrdersScreenState
                                   ),
                                 ],
                               ),
+
+                              const SizedBox(height: 12),
+
+                              Row(
+                                children: [
+                                  const Icon(
+                                    Icons.receipt_long,
+                                    size: 18,
+                                    color: Color(0xFF30D158),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    "Total Amount: ₹${order.totalAmount.toStringAsFixed(2)}",
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
+                                      color: Color(0xFF30D158),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ],
                           ),
                         ),
@@ -985,6 +1005,40 @@ class _AdminOrdersScreenState
                             ),
                           );
                         }),
+
+                        Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF2C2C2E),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: const Color(0xFF3A3A3C),
+                              width: 0.5,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text(
+                                "Total Order Amount",
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              Text(
+                                "₹${order.totalAmount.toStringAsFixed(2)}",
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF30D158),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
 
                         const Divider(),
 
