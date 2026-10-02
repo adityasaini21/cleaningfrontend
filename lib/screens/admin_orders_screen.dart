@@ -1,5 +1,7 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../models/order.dart';
 import '../services/order_history_service.dart';
@@ -52,6 +54,227 @@ class _AdminOrdersScreenState
   void _loadOrders() {
 
     _orders = _service.fetchAllOrders();
+  }
+
+  // =====================================
+  // =====================================
+  // OPEN GOOGLE MAPS FOR CUSTOMER LOCATION
+  // =====================================
+
+  /// Extracts coordinates from text (e.g., "26.4499, 80.3319" or "lat: 26.44, lng: 80.33") if present
+  static Map<String, double>? _tryExtractCoordinates(String text) {
+    if (text.isEmpty) return null;
+    final regex = RegExp(r'([-+]?\d{1,2}\.\d+)[,\s]+([-+]?\d{1,3}\.\d+)');
+    final match = regex.firstMatch(text);
+    if (match != null) {
+      final lat = double.tryParse(match.group(1)!);
+      final lng = double.tryParse(match.group(2)!);
+      if (lat != null && lng != null && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
+        return {'lat': lat, 'lng': lng};
+      }
+    }
+    return null;
+  }
+
+  Future<void> _openGoogleMaps({
+    required String address,
+    required String pincode,
+    double? latitude,
+    double? longitude,
+  }) async {
+    // Check if coordinates were explicitly passed or embedded in address
+    final extracted = (latitude != null && longitude != null)
+        ? {'lat': latitude, 'lng': longitude}
+        : _tryExtractCoordinates(address);
+
+    Uri uri;
+    if (extracted != null) {
+      uri = Uri.parse("https://www.google.com/maps/search/?api=1&query=${extracted['lat']},${extracted['lng']}");
+    } else {
+      final query = [address, pincode].where((s) => s.trim().isNotEmpty).join(", ");
+      if (query.isEmpty) return;
+      uri = Uri.parse("https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent(query)}");
+    }
+
+    try {
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Could not open Google Maps")),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error opening Maps: $e")),
+      );
+    }
+  }
+
+  // =====================================
+  // SHARE DELIVERY DETAILS WITH RIDER
+  // =====================================
+
+  void _shareDeliveryDetails(OrderModel order) {
+    final extractedCoords = _tryExtractCoordinates(order.shippingAddress);
+
+    // Address-based query link
+    final addressQuery = [order.shippingAddress, order.pincode].where((s) => s.trim().isNotEmpty).join(", ");
+    final addressMapsLink = "https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent(addressQuery)}";
+
+    // Exact GPS coordinates link (if coordinates are present or fallback to address)
+    final coordMapsLink = extractedCoords != null
+        ? "https://www.google.com/maps/search/?api=1&query=${extractedCoords['lat']},${extractedCoords['lng']}"
+        : addressMapsLink;
+
+    String buildMessage({bool useCoordinates = false}) {
+      final navLink = useCoordinates ? coordMapsLink : addressMapsLink;
+      final coordText = (useCoordinates && extractedCoords != null)
+          ? "\n🎯 *Exact GPS Coordinates:* ${extractedCoords['lat']}, ${extractedCoords['lng']}"
+          : "";
+      return """
+📦 *NuKlean Delivery Assignment*
+🆔 *Order ID:* ${order.orderCode}
+👤 *Customer:* ${order.customerName.trim().isNotEmpty ? order.customerName.trim() : 'Customer'}
+📞 *Phone:* ${order.phoneNumber}
+📍 *Delivery Address:* ${order.shippingAddress}${order.pincode.trim().isNotEmpty ? " - ${order.pincode.trim()}" : ""}$coordText
+🗺️ *Google Maps Navigation:* $navLink
+💰 *Amount to Collect:* ₹${order.totalAmount.toStringAsFixed(2)} (${order.paymentStatus})
+""";
+    }
+
+    final double? latVal = extractedCoords?['lat'];
+    final double? lngVal = extractedCoords?['lng'];
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF1C1C1E),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (BuildContext ctx) {
+        final List<Widget> items = [
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade600,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            "Share / Navigate to Customer",
+            style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            (latVal != null && lngVal != null)
+                ? "Exact GPS coordinates detected (${latVal.toStringAsFixed(5)}, ${lngVal.toStringAsFixed(5)})"
+                : "Send delivery address & navigation link directly to your rider.",
+            style: TextStyle(color: (latVal != null && lngVal != null) ? const Color(0xFF30D158) : Colors.grey, fontSize: 13),
+          ),
+          const SizedBox(height: 16),
+          // Option 1: WhatsApp (Address + Link)
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const CircleAvatar(
+              backgroundColor: Color(0xFF25D366),
+              child: Icon(Icons.chat_bubble_outline, color: Colors.white),
+            ),
+            title: const Text("Share via WhatsApp", style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+            subtitle: Text(
+              order.deliveryBoyPhone.trim().isNotEmpty
+                  ? "Send to rider (${order.deliveryBoyPhone})"
+                  : "Open WhatsApp to choose contact",
+              style: const TextStyle(color: Colors.grey, fontSize: 12),
+            ),
+            trailing: const Icon(Icons.arrow_forward_ios, color: Colors.grey, size: 14),
+            onTap: () async {
+              Navigator.pop(ctx);
+              final message = buildMessage(useCoordinates: extractedCoords != null);
+              final cleanPhone = order.deliveryBoyPhone.replaceAll(RegExp(r'[^0-9]'), '');
+              final waUrl = cleanPhone.isNotEmpty
+                  ? "https://wa.me/$cleanPhone?text=${Uri.encodeComponent(message)}"
+                  : "https://wa.me/?text=${Uri.encodeComponent(message)}";
+              final uri = Uri.parse(waUrl);
+              if (await canLaunchUrl(uri)) {
+                await launchUrl(uri, mode: LaunchMode.externalApplication);
+              }
+            },
+          ),
+          const Divider(color: Color(0xFF2C2C2E)),
+          // Option 2: Copy Exact Navigation Link
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const CircleAvatar(
+              backgroundColor: Color(0xFF0A84FF),
+              child: Icon(Icons.copy, color: Colors.white),
+            ),
+            title: const Text("Copy Delivery Details & Link", style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+            subtitle: Text(
+              extractedCoords != null ? "Includes exact coordinates link" : "Copy to clipboard for SMS or other apps",
+              style: const TextStyle(color: Colors.grey, fontSize: 12),
+            ),
+            trailing: const Icon(Icons.arrow_forward_ios, color: Colors.grey, size: 14),
+            onTap: () {
+              final message = buildMessage(useCoordinates: extractedCoords != null);
+              Clipboard.setData(ClipboardData(text: message));
+              Navigator.pop(ctx);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text("✅ Address and Google Maps link copied to clipboard!"),
+                  backgroundColor: Colors.green,
+                ),
+              );
+            },
+          ),
+        ];
+
+        if (latVal != null && lngVal != null) {
+          items.add(const Divider(color: Color(0xFF2C2C2E)));
+          items.add(
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const CircleAvatar(
+                backgroundColor: Color(0xFFFF9F0A),
+                child: Icon(Icons.my_location, color: Colors.white),
+              ),
+              title: const Text("Open Exact Coordinates in Maps", style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+              subtitle: Text(
+                "Target: ${latVal.toStringAsFixed(6)}, ${lngVal.toStringAsFixed(6)}",
+                style: const TextStyle(color: Colors.grey, fontSize: 12),
+              ),
+              trailing: const Icon(Icons.open_in_new, color: Colors.grey, size: 14),
+              onTap: () async {
+                Navigator.pop(ctx);
+                final uri = Uri.parse("https://www.google.com/maps/search/?api=1&query=$latVal,$lngVal");
+                if (await canLaunchUrl(uri)) {
+                  await launchUrl(uri, mode: LaunchMode.externalApplication);
+                }
+              },
+            ),
+          );
+        }
+
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: items,
+              ),
+            ),
+          ),
+        );
+      },
+    );
   }
 
   // =====================================
@@ -890,6 +1113,52 @@ class _AdminOrdersScreenState
                                     ),
                                   ),
                                 ],
+                              ),
+
+                              const SizedBox(height: 8),
+
+                              // 🗺️ LOCATION ACTIONS: OPEN IN MAPS & SHARE WITH RIDER
+                              Padding(
+                                padding: const EdgeInsets.only(left: 26),
+                                child: Wrap(
+                                  spacing: 8,
+                                  runSpacing: 6,
+                                  children: [
+                                    OutlinedButton.icon(
+                                      style: OutlinedButton.styleFrom(
+                                        foregroundColor: const Color(0xFF0A84FF),
+                                        side: const BorderSide(color: Color(0xFF0A84FF), width: 0.8),
+                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                        minimumSize: Size.zero,
+                                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                      ),
+                                      icon: const Icon(Icons.map_outlined, size: 14),
+                                      label: const Text("Open in Maps", style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                                      onPressed: () => _openGoogleMaps(
+                                        address: order.shippingAddress,
+                                        pincode: order.pincode,
+                                      ),
+                                    ),
+                                    OutlinedButton.icon(
+                                      style: OutlinedButton.styleFrom(
+                                        foregroundColor: const Color(0xFF30D158),
+                                        side: const BorderSide(color: Color(0xFF30D158), width: 0.8),
+                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                        minimumSize: Size.zero,
+                                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                      ),
+                                      icon: const Icon(Icons.share_location_outlined, size: 14),
+                                      label: const Text("Share with Rider", style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                                      onPressed: () => _shareDeliveryDetails(order),
+                                    ),
+                                  ],
+                                ),
                               ),
 
                               const SizedBox(height: 12),

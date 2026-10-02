@@ -3,10 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:http/http.dart' as http;
 import 'package:geolocator/geolocator.dart';
-import 'package:geocoding/geocoding.dart';
 import '../services/auth_service.dart';
 import '../services/profile_service.dart';
 import '../services/cart_provider.dart';
+import '../services/geocoding_service.dart';
 import '../models/user_profile.dart';
 import '../core/constants/india_states_cities.dart';
 import 'login_screen.dart';
@@ -90,6 +90,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _onFieldChanged() {
+    final pin = _pincodeController.text.trim();
+    if (pin.length == 6) {
+      _handlePincodeAutoLookup(pin);
+    }
     if (mounted) {
       setState(() {});
     }
@@ -220,6 +224,41 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  String _lastAutoPincode = "";
+  Future<void> _handlePincodeAutoLookup(String pin) async {
+    final cleanPin = pin.trim().replaceAll(RegExp(r'[^0-9]'), '');
+    if (cleanPin.length != 6 || cleanPin == _lastAutoPincode) return;
+    _lastAutoPincode = cleanPin;
+
+    try {
+      final res = await http
+          .get(Uri.parse("https://api.postalpincode.in/pincode/$cleanPin"))
+          .timeout(const Duration(seconds: 4));
+      if (res.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(res.body);
+        if (data.isNotEmpty && data[0]["Status"] == "Success") {
+          final postOffices = data[0]["PostOffice"] as List<dynamic>?;
+          if (postOffices != null && postOffices.isNotEmpty) {
+            final po = postOffices.first;
+            final detectedState = (po["State"] ?? "").toString();
+            final detectedDistrict = (po["District"] ?? "").toString();
+            final detectedBlock = (po["Block"] ?? "").toString();
+
+            final matched = GeocodingService.matchStateAndCity(detectedState, detectedDistrict, detectedBlock);
+            if (mounted && matched.state != null) {
+              setState(() {
+                _selectedState = matched.state;
+                if (matched.city != null) {
+                  _selectedCity = matched.city;
+                }
+              });
+            }
+          }
+        }
+      }
+    } catch (_) {}
+  }
+
   Future<void> _useCurrentLocation() async {
     setState(() {
       _isLocating = true;
@@ -272,17 +311,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
         return;
       }
 
-      // 3. Retrieve GPS Coordinates with Best Accuracy
+      // 3. Retrieve GPS Coordinates with Two-Stage Accuracy
       Position? position;
       try {
         position = await Geolocator.getCurrentPosition(
           locationSettings: const LocationSettings(
-            accuracy: LocationAccuracy.best,
-            timeLimit: Duration(seconds: 15),
+            accuracy: LocationAccuracy.high,
+            timeLimit: Duration(seconds: 10),
           ),
         );
       } catch (_) {
-        position = await Geolocator.getLastKnownPosition();
+        try {
+          position = await Geolocator.getCurrentPosition(
+            locationSettings: const LocationSettings(
+              accuracy: LocationAccuracy.medium,
+              timeLimit: Duration(seconds: 6),
+            ),
+          );
+        } catch (_) {
+          position = await Geolocator.getLastKnownPosition();
+        }
       }
 
       if (position == null) {
@@ -297,237 +345,57 @@ class _ProfileScreenState extends State<ProfileScreen> {
         return;
       }
 
-      // 4. Reverse Geocoding with native OS Geocoder + OpenStreetMap Fallback
-      String detectedAddress = "";
-      String detectedLandmark = "";
-      String detectedPincode = "";
-      String detectedState = "";
-      String detectedCity = "";
-
-      try {
-        final placemarks = await Geocoding().placemarkFromCoordinates(position.latitude, position.longitude);
-        if (placemarks.isNotEmpty) {
-          final p = placemarks.first;
-          final rawAddressParts = <String>[
-            p.subThoroughfare ?? "",
-            p.thoroughfare ?? "",
-            p.street ?? "",
-          ];
-          final addressParts = <String>[];
-          for (var part in rawAddressParts) {
-            final trimmed = part.trim();
-            if (trimmed.isNotEmpty &&
-                !addressParts.any((existing) =>
-                    existing.toLowerCase() == trimmed.toLowerCase() ||
-                    existing.toLowerCase().contains(trimmed.toLowerCase()))) {
-              addressParts.add(trimmed);
-            }
-          }
-
-          detectedAddress = addressParts.join(", ");
-          final landmarkParts = <String>[
-            p.subLocality ?? "",
-            p.locality ?? "",
-          ].where((s) => s.trim().isNotEmpty).toSet().toList();
-
-          detectedLandmark = landmarkParts.isNotEmpty ? landmarkParts.first : (p.name ?? "");
-          detectedPincode = p.postalCode ?? "";
-          detectedState = p.administrativeArea ?? "";
-          detectedCity = p.locality ?? p.subAdministrativeArea ?? "";
-        }
-      } catch (geoError) {
-        debugPrint("Native geocoder fallback triggered: $geoError");
-      }
-
-      // Free OpenStreetMap Nominatim Fallback if native geocoder returned empty
-      if (detectedAddress.isEmpty || detectedState.isEmpty) {
-        try {
-          final uri = Uri.parse(
-            "https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${position.latitude}&lon=${position.longitude}&zoom=18&addressdetails=1",
-          );
-          final res = await http.get(uri, headers: {
-            "User-Agent": "NuKleanApp/1.0",
-            "Accept-Language": "en",
-          });
-          if (res.statusCode == 200) {
-            final data = jsonDecode(res.body);
-            final address = data["address"] as Map<String, dynamic>?;
-            if (address != null) {
-              final road = address["road"] ?? address["suburb"] ?? address["neighbourhood"] ?? "";
-              final houseNumber = address["house_number"] ?? "";
-              final osmAddr = [houseNumber, road].where((s) => s.toString().trim().isNotEmpty).join(", ");
-              if (detectedAddress.isEmpty && osmAddr.isNotEmpty) {
-                detectedAddress = osmAddr;
-              }
-              if (detectedLandmark.isEmpty) {
-                detectedLandmark = (address["suburb"] ?? address["neighbourhood"] ?? address["city_district"] ?? "").toString();
-              }
-              if (detectedPincode.isEmpty) {
-                detectedPincode = (address["postcode"] ?? "").toString();
-              }
-              if (detectedState.isEmpty) {
-                detectedState = (address["state"] ?? "").toString();
-              }
-              if (detectedCity.isEmpty) {
-                detectedCity = (address["city"] ?? address["town"] ?? address["village"] ?? address["state_district"] ?? address["county"] ?? "").toString();
-              }
-            }
-          }
-        } catch (osmError) {
-          debugPrint("OSM reverse geocoding error: $osmError");
-        }
-      }
-
-      // 5. Match detected state and city against indiaStatesAndCities Map strictly
-      String normalize(String s) => s.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
-
-      final stateAliases = <String, String>{
-        "up": "Uttar Pradesh",
-        "uttarpradesh": "Uttar Pradesh",
-        "mp": "Madhya Pradesh",
-        "madhyapradesh": "Madhya Pradesh",
-        "delhi": "Delhi",
-        "newdelhi": "Delhi",
-        "nct": "Delhi",
-        "nctofdelhi": "Delhi",
-        "nationalcapitalterritoryofdelhi": "Delhi",
-        "maharashtra": "Maharashtra",
-        "mh": "Maharashtra",
-        "rajasthan": "Rajasthan",
-        "rj": "Rajasthan",
-        "haryana": "Haryana",
-        "hr": "Haryana",
-        "punjab": "Punjab",
-        "pb": "Punjab",
-        "gujarat": "Gujarat",
-        "gj": "Gujarat",
-        "bihar": "Bihar",
-        "br": "Bihar",
-        "westbengal": "West Bengal",
-        "wb": "West Bengal",
-        "tamilnadu": "Tamil Nadu",
-        "tn": "Tamil Nadu",
-        "karnataka": "Karnataka",
-        "ka": "Karnataka",
-        "telangana": "Telangana",
-        "ts": "Telangana",
-        "andhrapradesh": "Andhra Pradesh",
-        "ap": "Andhra Pradesh",
-        "kerala": "Kerala",
-        "kl": "Kerala",
-        "uttarakhand": "Uttarakhand",
-        "uk": "Uttarakhand",
-        "ua": "Uttarakhand",
-        "uttaranchal": "Uttarakhand",
-        "odisha": "Odisha",
-        "orissa": "Odisha",
-        "chhattisgarh": "Chhattisgarh",
-        "cg": "Chhattisgarh",
-        "jharkhand": "Jharkhand",
-        "jh": "Jharkhand",
-        "assam": "Assam",
-        "as": "Assam",
-        "himachalpradesh": "Himachal Pradesh",
-        "hp": "Himachal Pradesh",
-        "jammuandkashmir": "Jammu and Kashmir",
-        "jk": "Jammu and Kashmir",
-        "chandigarh": "Chandigarh",
-        "goa": "Goa",
-      };
-
-      String? matchedState;
-      final normDetectedState = normalize(detectedState);
-
-      if (stateAliases.containsKey(normDetectedState)) {
-        matchedState = stateAliases[normDetectedState];
-      }
-
-      if (matchedState == null && normDetectedState.isNotEmpty) {
-        for (var stateKey in indiaStatesAndCities.keys) {
-          if (normalize(stateKey) == normDetectedState) {
-            matchedState = stateKey;
-            break;
-          }
-        }
-      }
-
-      if (matchedState == null && detectedState.isNotEmpty) {
-        for (var stateKey in indiaStatesAndCities.keys) {
-          if (detectedState.toLowerCase().contains(stateKey.toLowerCase())) {
-            matchedState = stateKey;
-            break;
-          }
-        }
-      }
-
-      String? matchedCity;
-      if (matchedState != null) {
-        final citiesList = indiaStatesAndCities[matchedState] ?? [];
-        final normDetectedCity = normalize(detectedCity);
-        final cityCandidates = [detectedCity, detectedLandmark, detectedAddress]
-            .where((s) => s.trim().isNotEmpty)
-            .map((s) => normalize(s))
-            .toList();
-
-        for (var cityItem in citiesList) {
-          final normCity = normalize(cityItem);
-          if (normCity == normDetectedCity) {
-            matchedCity = cityItem;
-            break;
-          }
-        }
-
-        if (matchedCity == null) {
-          for (var cityItem in citiesList) {
-            final normCity = normalize(cityItem);
-            if (normCity.length >= 4) {
-              for (var cand in cityCandidates) {
-                if (cand.contains(normCity) || (cand.length >= 4 && normCity.contains(cand))) {
-                  matchedCity = cityItem;
-                  break;
-                }
-              }
-            }
-            if (matchedCity != null) break;
-          }
-        }
-      }
-
-      // 6. Update text fields and state
-      if (!mounted) return;
-      setState(() {
-        if (detectedAddress.isNotEmpty) {
-          _addressController.text = detectedAddress;
-        }
-        if (detectedLandmark.isNotEmpty) {
-          _landmarkController.text = detectedLandmark;
-        }
-        final numericPincode = detectedPincode.replaceAll(RegExp(r'[^0-9]'), '');
-        if (numericPincode.length >= 6) {
-          _pincodeController.text = numericPincode.substring(0, 6);
-        } else if (numericPincode.isNotEmpty) {
-          _pincodeController.text = numericPincode;
-        }
-        if (matchedState != null) {
-          _selectedState = matchedState;
-          if (matchedCity != null) {
-            _selectedCity = matchedCity;
-          }
-        }
-        _isLocating = false;
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            matchedCity != null && matchedState != null
-                ? "📍 Location detected: $matchedCity, $matchedState"
-                : "📍 Address details filled from GPS. Please verify.",
-          ),
-          backgroundColor: Colors.green,
-          duration: const Duration(seconds: 3),
-        ),
+      // 4. Reverse Geocoding with unified GeocodingService
+      final geocoded = await GeocodingService().reverseGeocode(
+        latitude: position.latitude,
+        longitude: position.longitude,
       );
+
+      if (geocoded != null) {
+        if (!mounted) return;
+        setState(() {
+          if (geocoded.address.isNotEmpty) {
+            _addressController.text = geocoded.address;
+          }
+          if (geocoded.landmark.isNotEmpty) {
+            _landmarkController.text = geocoded.landmark;
+          }
+          final numericPincode = geocoded.pincode.replaceAll(RegExp(r'[^0-9]'), '');
+          if (numericPincode.length >= 6) {
+            _pincodeController.text = numericPincode.substring(0, 6);
+          } else if (numericPincode.isNotEmpty) {
+            _pincodeController.text = numericPincode;
+          }
+          if (geocoded.state != null) {
+            _selectedState = geocoded.state;
+            if (geocoded.city != null) {
+              _selectedCity = geocoded.city;
+            }
+          }
+          _isLocating = false;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              geocoded.city != null && geocoded.state != null
+                  ? "📍 Location detected: ${geocoded.city}, ${geocoded.state}"
+                  : "📍 Address details filled from GPS. Please verify.",
+            ),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      } else {
+        if (!mounted) return;
+        setState(() => _isLocating = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Could not resolve address details. Please enter manually."),
+            backgroundColor: Colors.orangeAccent,
+          ),
+        );
+      }
     } catch (e) {
       if (!mounted) return;
       setState(() => _isLocating = false);
