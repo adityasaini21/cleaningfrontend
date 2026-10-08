@@ -14,6 +14,8 @@ import 'package:prem_chemicals_app/services/notification_service.dart';
 import 'package:provider/provider.dart';
 
 import 'services/cart_provider.dart';
+import 'services/theme_provider.dart';
+import 'services/product_status_manager.dart';
 
 import 'screens/splash_screen.dart';
 
@@ -122,10 +124,14 @@ void main() async {
 
   final cartProvider = CartProvider();
   await cartProvider.loadCart();
+  await ProductStatusManager.init();
 
   runApp(
-    ChangeNotifierProvider.value(
-      value: cartProvider,
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider.value(value: cartProvider),
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
+      ],
       child: const PremChemicalsApp(),
     ),
   );
@@ -141,15 +147,14 @@ class PremChemicalsApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
 
     return MaterialApp(
-
       debugShowCheckedModeBanner: false,
-
       title: "Prem Chemicals",
-
-      theme: AppTheme.darkTheme,
-
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: themeProvider.themeMode,
       home: const SplashScreen(),
     );
   }

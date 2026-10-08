@@ -10,6 +10,7 @@ import '../models/category.dart';
 import '../services/product_service.dart';
 import '../services/cart_provider.dart';
 import '../services/auth_service.dart';
+import '../services/product_status_manager.dart';
 
 import 'login_screen.dart';
 import 'product_detail_screen.dart';
@@ -708,14 +709,15 @@ class _ProductListScreenState
               Row(
                 children: [
                   Expanded(
+                    flex: 1,
                     child: SizedBox(
-                      height: 36,
+                      height: 34,
                       child: ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue,
+                          backgroundColor: const Color(0xFF0A84FF),
                           padding: EdgeInsets.zero,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
+                            borderRadius: BorderRadius.circular(8),
                           ),
                         ),
                         onPressed: () {
@@ -726,24 +728,75 @@ class _ProductListScreenState
                             ),
                           );
                         },
-                        child: const Icon(Icons.edit, color: Colors.white, size: 18),
+                        child: const Icon(Icons.edit, color: Colors.white, size: 16),
                       ),
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 5),
                   Expanded(
+                    flex: 2,
                     child: SizedBox(
-                      height: 36,
+                      height: 34,
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: p.isComingSoon ? const Color(0xFF30D158) : const Color(0xFFF59E0B),
+                          foregroundColor: Colors.black,
+                          padding: const EdgeInsets.symmetric(horizontal: 2),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        onPressed: () async {
+                          final newIsLive = await ProductStatusManager.toggleProductStatus(p.id, p.name);
+                          if (!mounted) return;
+                          setState(() {
+                            _applySearchFilter();
+                          });
+                          ScaffoldMessenger.of(context).clearSnackBars();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                newIsLive
+                                    ? "Unlocked! '${p.name}' is now LIVE."
+                                    : "Locked! '${p.name}' set to COMING SOON.",
+                                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                              ),
+                              backgroundColor: newIsLive ? const Color(0xFF30D158) : const Color(0xFFF59E0B),
+                              duration: const Duration(seconds: 2),
+                            ),
+                          );
+                        },
+                        icon: Icon(
+                          p.isComingSoon ? Icons.lock_open_rounded : Icons.lock_clock_outlined,
+                          color: Colors.black,
+                          size: 13,
+                        ),
+                        label: Text(
+                          p.isComingSoon ? "Unlock" : "Lock",
+                          style: const TextStyle(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 5),
+                  Expanded(
+                    flex: 1,
+                    child: SizedBox(
+                      height: 34,
                       child: ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red,
+                          backgroundColor: const Color(0xFFFF453A),
                           padding: EdgeInsets.zero,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
+                            borderRadius: BorderRadius.circular(8),
                           ),
                         ),
                         onPressed: () => _deleteProduct(p),
-                        child: const Icon(Icons.delete, color: Colors.white, size: 18),
+                        child: const Icon(Icons.delete, color: Colors.white, size: 16),
                       ),
                     ),
                   ),

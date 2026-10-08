@@ -4,6 +4,7 @@ class AdminUser {
   final String phoneNumber;
   final String? email;
   final bool active;
+  final bool deletedByUser;
 
   AdminUser({
     required this.id,
@@ -11,6 +12,7 @@ class AdminUser {
     required this.phoneNumber,
     this.email,
     required this.active,
+    this.deletedByUser = false,
   });
 
   factory AdminUser.fromJson(Map<String, dynamic> json) {
@@ -20,6 +22,7 @@ class AdminUser {
       phoneNumber: json["phoneNumber"] ?? "",
       email: json["email"],
       active: json["active"] ?? false,
+      deletedByUser: json["deletedByUser"] ?? false,
     );
   }
 }

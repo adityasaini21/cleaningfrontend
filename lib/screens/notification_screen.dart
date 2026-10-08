@@ -211,13 +211,23 @@ class _NotificationScreenState
         ),
         actions: [
           TextButton(
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+            ),
             onPressed: () => Navigator.pop(dialogContext),
-            child: const Text("Cancel", style: TextStyle(color: Colors.grey)),
+            child: const Text("Cancel", style: TextStyle(color: Color(0xFF8E8E93), fontSize: 13)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFFF453A),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              elevation: 0,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20), // Premium rounded pill shape
+              ),
             ),
             onPressed: () async {
               Navigator.pop(dialogContext);
@@ -225,7 +235,7 @@ class _NotificationScreenState
             },
             child: const Text(
               "Clear All",
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
             ),
           ),
         ],
@@ -303,20 +313,32 @@ class _NotificationScreenState
         actions: [
           if (_notifications.isNotEmpty)
             Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: TextButton.icon(
+              padding: const EdgeInsets.only(right: 12, top: 8, bottom: 8),
+              child: OutlinedButton.icon(
                 onPressed: _showClearAllConfirmationDialog,
+                style: OutlinedButton.styleFrom(
+                  backgroundColor: const Color(0xFFFF453A).withOpacity(0.1),
+                  foregroundColor: const Color(0xFFFF453A),
+                  side: BorderSide(
+                    color: const Color(0xFFFF453A).withOpacity(0.35),
+                    width: 0.8,
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20), // Smooth pill curvature replacing boxy edges
+                  ),
+                ),
                 icon: const Icon(
                   Icons.delete_sweep_outlined,
-                  size: 18,
+                  size: 15,
                   color: Color(0xFFFF453A),
                 ),
                 label: const Text(
                   "Clear All",
                   style: TextStyle(
                     color: Color(0xFFFF453A),
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
               ),

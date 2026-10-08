@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../models/order.dart';
 import '../services/order_history_service.dart';
+import '../services/geocoding_service.dart';
 
 import 'deleted_products_screen.dart';
 
@@ -20,10 +21,11 @@ class AdminOrdersScreen extends StatefulWidget {
 class _AdminOrdersScreenState
     extends State<AdminOrdersScreen> {
 
-  final OrderHistoryService _service =
-  OrderHistoryService();
+  final OrderHistoryService _service = OrderHistoryService();
 
-  late Future<List<OrderModel>> _orders;
+  List<OrderModel>? _cachedOrders;
+  bool _isLoading = true;
+  String? _errorMessage;
 
   final Map<int, TextEditingController> _deliveryNameControllers = {};
   final Map<int, TextEditingController> _deliveryPhoneControllers = {};
@@ -41,9 +43,7 @@ class _AdminOrdersScreenState
 
   @override
   void initState() {
-
     super.initState();
-
     _loadOrders();
   }
 
@@ -51,9 +51,32 @@ class _AdminOrdersScreenState
   // LOAD ORDERS
   // =====================================
 
-  void _loadOrders() {
+  void _loadOrders({bool silent = false}) {
+    if (!silent && _cachedOrders == null) {
+      setState(() {
+        _isLoading = true;
+        _errorMessage = null;
+      });
+    }
 
-    _orders = _service.fetchAllOrders();
+    _service.fetchAllOrders().then((data) {
+      if (mounted) {
+        setState(() {
+          _cachedOrders = data;
+          _isLoading = false;
+          _errorMessage = null;
+        });
+      }
+    }).catchError((err) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          if (_cachedOrders == null) {
+            _errorMessage = err.toString();
+          }
+        });
+      }
+    });
   }
 
   // =====================================
@@ -117,36 +140,15 @@ class _AdminOrdersScreenState
   // SHARE DELIVERY DETAILS WITH RIDER
   // =====================================
 
+  // =====================================
+  // SHARE DELIVERY DETAILS WITH RIDER
+  // =====================================
+
   void _shareDeliveryDetails(OrderModel order) {
-    final extractedCoords = _tryExtractCoordinates(order.shippingAddress);
-
-    // Address-based query link
-    final addressQuery = [order.shippingAddress, order.pincode].where((s) => s.trim().isNotEmpty).join(", ");
-    final addressMapsLink = "https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent(addressQuery)}";
-
-    // Exact GPS coordinates link (if coordinates are present or fallback to address)
-    final coordMapsLink = extractedCoords != null
-        ? "https://www.google.com/maps/search/?api=1&query=${extractedCoords['lat']},${extractedCoords['lng']}"
-        : addressMapsLink;
-
-    String buildMessage({bool useCoordinates = false}) {
-      final navLink = useCoordinates ? coordMapsLink : addressMapsLink;
-      final coordText = (useCoordinates && extractedCoords != null)
-          ? "\n🎯 *Exact GPS Coordinates:* ${extractedCoords['lat']}, ${extractedCoords['lng']}"
-          : "";
-      return """
-📦 *NuKlean Delivery Assignment*
-🆔 *Order ID:* ${order.orderCode}
-👤 *Customer:* ${order.customerName.trim().isNotEmpty ? order.customerName.trim() : 'Customer'}
-📞 *Phone:* ${order.phoneNumber}
-📍 *Delivery Address:* ${order.shippingAddress}${order.pincode.trim().isNotEmpty ? " - ${order.pincode.trim()}" : ""}$coordText
-🗺️ *Google Maps Navigation:* $navLink
-💰 *Amount to Collect:* ₹${order.totalAmount.toStringAsFixed(2)} (${order.paymentStatus})
-""";
-    }
-
-    final double? latVal = extractedCoords?['lat'];
-    final double? lngVal = extractedCoords?['lng'];
+    Map<String, double>? extractedCoords = _tryExtractCoordinates(order.shippingAddress);
+    double? latVal = extractedCoords?['lat'];
+    double? lngVal = extractedCoords?['lng'];
+    bool isResolvingCoords = (latVal == null || lngVal == null);
 
     showModalBottomSheet(
       context: context,
@@ -155,121 +157,337 @@ class _AdminOrdersScreenState
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (BuildContext ctx) {
-        final List<Widget> items = [
-          Center(
-            child: Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade600,
-                borderRadius: BorderRadius.circular(2),
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setModalState) {
+            // Trigger background forward geocoding if coords not yet extracted
+            if (isResolvingCoords) {
+              GeocodingService().forwardGeocode(
+                address: order.shippingAddress,
+                pincode: order.pincode,
+              ).then((result) {
+                if (result != null && ctx.mounted) {
+                  setModalState(() {
+                    latVal = result.lat;
+                    lngVal = result.lng;
+                    extractedCoords = {'lat': result.lat, 'lng': result.lng};
+                    isResolvingCoords = false;
+                  });
+                } else if (ctx.mounted) {
+                  setModalState(() {
+                    isResolvingCoords = false;
+                  });
+                }
+              }).catchError((_) {
+                if (ctx.mounted) {
+                  setModalState(() {
+                    isResolvingCoords = false;
+                  });
+                }
+              });
+            }
+
+            // Navigation Links
+            final addressQuery = [order.shippingAddress, order.pincode].where((s) => s.trim().isNotEmpty).join(", ");
+            final addressMapsLink = "https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent(addressQuery)}";
+            final coordMapsLink = (latVal != null && lngVal != null)
+                ? "https://www.google.com/maps/search/?api=1&query=$latVal,$lngVal"
+                : addressMapsLink;
+
+            String buildMessage({bool useCoordinates = true}) {
+              final navLink = (useCoordinates && latVal != null && lngVal != null) ? coordMapsLink : addressMapsLink;
+              final coordText = (latVal != null && lngVal != null)
+                  ? "\n🎯 *Exact GPS Coordinates:* ${latVal!.toStringAsFixed(5)}, ${lngVal!.toStringAsFixed(5)}"
+                  : "";
+              return """
+📦 *NuKlean Delivery Assignment*
+🆔 *Order ID:* ${order.orderCode}
+👤 *Customer:* ${order.customerName.trim().isNotEmpty ? order.customerName.trim() : 'Customer'}
+📞 *Phone:* ${order.phoneNumber}
+📍 *Delivery Address:* ${order.shippingAddress}${order.pincode.trim().isNotEmpty ? " - ${order.pincode.trim()}" : ""}$coordText
+🗺️ *Google Maps Navigation:* $navLink
+💰 *Amount to Collect:* ₹${order.totalAmount.toStringAsFixed(2)} (${order.paymentStatus})
+""";
+            }
+
+            final List<Widget> items = [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade600,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
               ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          const Text(
-            "Share / Navigate to Customer",
-            style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            (latVal != null && lngVal != null)
-                ? "Exact GPS coordinates detected (${latVal.toStringAsFixed(5)}, ${lngVal.toStringAsFixed(5)})"
-                : "Send delivery address & navigation link directly to your rider.",
-            style: TextStyle(color: (latVal != null && lngVal != null) ? const Color(0xFF30D158) : Colors.grey, fontSize: 13),
-          ),
-          const SizedBox(height: 16),
-          // Option 1: WhatsApp (Address + Link)
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            leading: const CircleAvatar(
-              backgroundColor: Color(0xFF25D366),
-              child: Icon(Icons.chat_bubble_outline, color: Colors.white),
-            ),
-            title: const Text("Share via WhatsApp", style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
-            subtitle: Text(
-              order.deliveryBoyPhone.trim().isNotEmpty
-                  ? "Send to rider (${order.deliveryBoyPhone})"
-                  : "Open WhatsApp to choose contact",
-              style: const TextStyle(color: Colors.grey, fontSize: 12),
-            ),
-            trailing: const Icon(Icons.arrow_forward_ios, color: Colors.grey, size: 14),
-            onTap: () async {
-              Navigator.pop(ctx);
-              final message = buildMessage(useCoordinates: extractedCoords != null);
-              final cleanPhone = order.deliveryBoyPhone.replaceAll(RegExp(r'[^0-9]'), '');
-              final waUrl = cleanPhone.isNotEmpty
-                  ? "https://wa.me/$cleanPhone?text=${Uri.encodeComponent(message)}"
-                  : "https://wa.me/?text=${Uri.encodeComponent(message)}";
-              final uri = Uri.parse(waUrl);
-              if (await canLaunchUrl(uri)) {
-                await launchUrl(uri, mode: LaunchMode.externalApplication);
-              }
-            },
-          ),
-          const Divider(color: Color(0xFF2C2C2E)),
-          // Option 2: Copy Exact Navigation Link
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            leading: const CircleAvatar(
-              backgroundColor: Color(0xFF0A84FF),
-              child: Icon(Icons.copy, color: Colors.white),
-            ),
-            title: const Text("Copy Delivery Details & Link", style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
-            subtitle: Text(
-              extractedCoords != null ? "Includes exact coordinates link" : "Copy to clipboard for SMS or other apps",
-              style: const TextStyle(color: Colors.grey, fontSize: 12),
-            ),
-            trailing: const Icon(Icons.arrow_forward_ios, color: Colors.grey, size: 14),
-            onTap: () {
-              final message = buildMessage(useCoordinates: extractedCoords != null);
-              Clipboard.setData(ClipboardData(text: message));
-              Navigator.pop(ctx);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text("✅ Address and Google Maps link copied to clipboard!"),
-                  backgroundColor: Colors.green,
+              const SizedBox(height: 16),
+              const Text(
+                "Share / Navigate to Customer",
+                style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 6),
+              if (latVal != null && lngVal != null)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  margin: const EdgeInsets.only(top: 4, bottom: 8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF30D158).withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: const Color(0xFF30D158).withValues(alpha: 0.3), width: 0.8),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.gps_fixed, color: Color(0xFF30D158), size: 14),
+                      const SizedBox(width: 6),
+                      Text(
+                        "🎯 Exact GPS Coordinates: ${latVal!.toStringAsFixed(5)}, ${lngVal!.toStringAsFixed(5)}",
+                        style: const TextStyle(color: Color(0xFF30D158), fontSize: 12, fontWeight: FontWeight.w600),
+                      ),
+                    ],
+                  ),
+                )
+              else if (isResolvingCoords)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 4),
+                  child: Row(
+                    children: [
+                      SizedBox(width: 12, height: 12, child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF30D158))),
+                      SizedBox(width: 8),
+                      Text("Detecting pinpoint GPS coordinates...", style: TextStyle(color: Colors.grey, fontSize: 12)),
+                    ],
+                  ),
+                )
+              else
+                Text(
+                  "Send delivery address & navigation link directly to your rider.",
+                  style: const TextStyle(color: Colors.grey, fontSize: 13),
+                ),
+              const SizedBox(height: 14),
+              // Option 1: WhatsApp (Address + Link + Coordinates)
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const CircleAvatar(
+                  backgroundColor: Color(0xFF25D366),
+                  child: Icon(Icons.chat_bubble_outline, color: Colors.white),
+                ),
+                title: const Text("Share via WhatsApp", style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                subtitle: Text(
+                  order.deliveryBoyPhone.trim().isNotEmpty
+                      ? "Send to rider (${order.deliveryBoyPhone})"
+                      : "Open WhatsApp to choose contact",
+                  style: const TextStyle(color: Colors.grey, fontSize: 12),
+                ),
+                trailing: const Icon(Icons.arrow_forward_ios, color: Colors.grey, size: 14),
+                onTap: () async {
+                  Navigator.pop(ctx);
+                  final message = buildMessage(useCoordinates: true);
+                  final cleanPhone = order.deliveryBoyPhone.replaceAll(RegExp(r'[^0-9]'), '');
+                  final waUrl = cleanPhone.isNotEmpty
+                      ? "https://wa.me/$cleanPhone?text=${Uri.encodeComponent(message)}"
+                      : "https://wa.me/?text=${Uri.encodeComponent(message)}";
+                  final uri = Uri.parse(waUrl);
+                  if (await canLaunchUrl(uri)) {
+                    await launchUrl(uri, mode: LaunchMode.externalApplication);
+                  }
+                },
+              ),
+              const Divider(color: Color(0xFF2C2C2E)),
+              // Option 2: Copy Exact Navigation Link & GPS
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const CircleAvatar(
+                  backgroundColor: Color(0xFF0A84FF),
+                  child: Icon(Icons.copy, color: Colors.white),
+                ),
+                title: const Text("Copy Delivery Details & Link", style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                subtitle: Text(
+                  (latVal != null && lngVal != null)
+                      ? "Includes exact coordinates (${latVal!.toStringAsFixed(4)}, ${lngVal!.toStringAsFixed(4)}) & Maps link"
+                      : "Copy to clipboard for SMS or other apps",
+                  style: const TextStyle(color: Colors.grey, fontSize: 12),
+                ),
+                trailing: const Icon(Icons.arrow_forward_ios, color: Colors.grey, size: 14),
+                onTap: () {
+                  final message = buildMessage(useCoordinates: true);
+                  Clipboard.setData(ClipboardData(text: message));
+                  Navigator.pop(ctx);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text("✅ Address and Google Maps link copied to clipboard!"),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                },
+              ),
+            ];
+
+            // Option 3: Direct Maps Launch with Exact Coordinates
+            if (latVal != null && lngVal != null) {
+              items.add(const Divider(color: Color(0xFF2C2C2E)));
+              items.add(
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const CircleAvatar(
+                    backgroundColor: Color(0xFFFF9F0A),
+                    child: Icon(Icons.my_location, color: Colors.white),
+                  ),
+                  title: const Text("Open Exact Coordinates in Maps", style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                  subtitle: Text(
+                    "Target: ${latVal!.toStringAsFixed(6)}, ${lngVal!.toStringAsFixed(6)}",
+                    style: const TextStyle(color: Colors.grey, fontSize: 12),
+                  ),
+                  trailing: const Icon(Icons.open_in_new, color: Colors.grey, size: 14),
+                  onTap: () async {
+                    Navigator.pop(ctx);
+                    final uri = Uri.parse("https://www.google.com/maps/search/?api=1&query=$latVal,$lngVal");
+                    if (await canLaunchUrl(uri)) {
+                      await launchUrl(uri, mode: LaunchMode.externalApplication);
+                    }
+                  },
                 ),
               );
-            },
-          ),
-        ];
+            }
 
-        if (latVal != null && lngVal != null) {
-          items.add(const Divider(color: Color(0xFF2C2C2E)));
-          items.add(
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: const CircleAvatar(
-                backgroundColor: Color(0xFFFF9F0A),
-                child: Icon(Icons.my_location, color: Colors.white),
+            return SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: items,
+                  ),
+                ),
               ),
-              title: const Text("Open Exact Coordinates in Maps", style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
-              subtitle: Text(
-                "Target: ${latVal.toStringAsFixed(6)}, ${lngVal.toStringAsFixed(6)}",
-                style: const TextStyle(color: Colors.grey, fontSize: 12),
-              ),
-              trailing: const Icon(Icons.open_in_new, color: Colors.grey, size: 14),
-              onTap: () async {
-                Navigator.pop(ctx);
-                final uri = Uri.parse("https://www.google.com/maps/search/?api=1&query=$latVal,$lngVal");
-                if (await canLaunchUrl(uri)) {
-                  await launchUrl(uri, mode: LaunchMode.externalApplication);
-                }
-              },
-            ),
-          );
-        }
+            );
+          },
+        );
+      },
+    );
+  }
 
+  // =====================================
+  // SHARE PACKING LIST WITH PACKING TEAM
+  // =====================================
+
+  void _sharePackingList(OrderModel order) {
+    final StringBuffer buffer = StringBuffer();
+    buffer.writeln("📦 *ORDER PACKING LIST*");
+    buffer.writeln("🆔 *Order ID:* #${order.orderCode}");
+    if (order.customerName.trim().isNotEmpty) {
+      buffer.writeln("👤 *Customer:* ${order.customerName.trim()}");
+    }
+    if (order.phoneNumber.trim().isNotEmpty) {
+      final cleanPhone = order.phoneNumber.split("|")[0].replaceAll("(Alt)", "").trim();
+      buffer.writeln("📞 *Phone:* $cleanPhone");
+    }
+    buffer.writeln("📅 *Date:* ${_formatDate(order.createdAt)}");
+    buffer.writeln("");
+    buffer.writeln("📋 *ITEMS TO PACK:*");
+    buffer.writeln("----------------------------------");
+
+    int totalQty = 0;
+    for (int i = 0; i < order.items.length; i++) {
+      final item = order.items[i];
+      buffer.writeln("${i + 1}️⃣ *${item.productName}*");
+      buffer.writeln("   • *Quantity:* ${item.quantity}");
+      totalQty += item.quantity;
+    }
+    buffer.writeln("----------------------------------");
+    buffer.writeln("📦 *Total Quantity:* $totalQty item${totalQty == 1 ? '' : 's'}");
+    buffer.writeln("💰 *Total Order Value:* ₹${order.totalAmount.toStringAsFixed(2)}");
+    if (order.shippingAddress.trim().isNotEmpty) {
+      buffer.writeln("📍 *Delivery Address:* ${order.shippingAddress}");
+    }
+
+    final message = buffer.toString();
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF1C1C1E),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (BuildContext ctx) {
         return SafeArea(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: items,
-              ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade600,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    const Icon(Icons.inventory_2_outlined, color: Color(0xFFFF9F0A), size: 24),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        "Send Packing Slip (#${order.orderCode})",
+                        style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                const Text(
+                  "Send product list and quantities directly to your order packing team.",
+                  style: TextStyle(color: Colors.grey, fontSize: 13),
+                ),
+                const SizedBox(height: 16),
+                // WhatsApp Share
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const CircleAvatar(
+                    backgroundColor: Color(0xFF25D366),
+                    child: Icon(Icons.chat_bubble_outline, color: Colors.white),
+                  ),
+                  title: const Text("Share via WhatsApp", style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                  subtitle: const Text("Send to Packing Team contact or WhatsApp group", style: TextStyle(color: Colors.grey, fontSize: 12)),
+                  trailing: const Icon(Icons.arrow_forward_ios, color: Colors.grey, size: 14),
+                  onTap: () async {
+                    Navigator.pop(ctx);
+                    final waUrl = "https://wa.me/?text=${Uri.encodeComponent(message)}";
+                    final uri = Uri.parse(waUrl);
+                    if (await canLaunchUrl(uri)) {
+                      await launchUrl(uri, mode: LaunchMode.externalApplication);
+                    }
+                  },
+                ),
+                const Divider(color: Color(0xFF2C2C2E)),
+                // Copy Option
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const CircleAvatar(
+                    backgroundColor: Color(0xFF0A84FF),
+                    child: Icon(Icons.copy, color: Colors.white),
+                  ),
+                  title: const Text("Copy Packing Slip Text", style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                  subtitle: const Text("Copy items & quantities to clipboard", style: TextStyle(color: Colors.grey, fontSize: 12)),
+                  trailing: const Icon(Icons.arrow_forward_ios, color: Colors.grey, size: 14),
+                  onTap: () {
+                    Clipboard.setData(ClipboardData(text: message));
+                    Navigator.pop(ctx);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text("✅ Packing slip copied to clipboard!"),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  },
+                ),
+              ],
             ),
           ),
         );
@@ -282,15 +500,19 @@ class _AdminOrdersScreenState
   // =====================================
 
   Future<void> _updateStatus({
-
     required int orderId,
-
     required String status,
-
   }) async {
+    // In-memory optimistic update to prevent page scrolling/resetting
+    if (_cachedOrders != null) {
+      final index = _cachedOrders!.indexWhere((o) => o.orderId == orderId);
+      if (index != -1) {
+        _cachedOrders![index] = _cachedOrders![index].copyWith(orderStatus: status);
+        setState(() {});
+      }
+    }
 
     try {
-
       await _service.updateOrderStatus(
         orderId: orderId,
         status: status,
@@ -298,31 +520,21 @@ class _AdminOrdersScreenState
 
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context)
-          .showSnackBar(
-
+      ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content:
-          Text("Order updated to $status"),
+          content: Text("Order updated to $status"),
+          duration: const Duration(seconds: 2),
         ),
       );
-
-      setState(() {
-        _loadOrders();
-      });
-
     } catch (e) {
-
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context)
-          .showSnackBar(
-
+      ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content:
-          Text("Failed to update status"),
+          content: Text("Failed to update status"),
         ),
       );
+      _loadOrders(silent: true);
     }
   }
 
@@ -392,19 +604,13 @@ class _AdminOrdersScreenState
   }
 
   Future<void> _handleRefresh() async {
-    setState(() {
-      _loadOrders();
-    });
-    try {
-      await _orders;
-    } catch (_) {}
+    _loadOrders(silent: true);
+    await Future.delayed(const Duration(milliseconds: 600));
   }
 
   @override
   Widget build(BuildContext context) {
-
     return Scaffold(
-
       appBar: AppBar(
         title: const Text("Orders Management"),
         actions: [
@@ -421,20 +627,15 @@ class _AdminOrdersScreenState
           ),
         ],
       ),
-
-      body: FutureBuilder<List<OrderModel>>(
-
-        future: _orders,
-
-        builder: (context, snapshot) {
-
-          if (snapshot.connectionState == ConnectionState.waiting) {
+      body: Builder(
+        builder: (context) {
+          if (_isLoading && _cachedOrders == null) {
             return const Center(
               child: CircularProgressIndicator(),
             );
           }
 
-          if (snapshot.hasError) {
+          if (_errorMessage != null && _cachedOrders == null) {
             return RefreshIndicator(
               onRefresh: _handleRefresh,
               child: ListView(
@@ -451,13 +652,13 @@ class _AdminOrdersScreenState
                             const Icon(Icons.error_outline, size: 48, color: Colors.redAccent),
                             const SizedBox(height: 12),
                             Text(
-                              "Error: ${snapshot.error}",
+                              "Error: $_errorMessage",
                               textAlign: TextAlign.center,
                               style: const TextStyle(color: Colors.white70, fontSize: 13),
                             ),
                             const SizedBox(height: 16),
                             ElevatedButton.icon(
-                              onPressed: () => setState(() => _loadOrders()),
+                              onPressed: () => _loadOrders(),
                               icon: const Icon(Icons.refresh, size: 16),
                               label: const Text("Retry"),
                             ),
@@ -471,7 +672,7 @@ class _AdminOrdersScreenState
             );
           }
 
-          if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          if (_cachedOrders == null || _cachedOrders!.isEmpty) {
             return RefreshIndicator(
               onRefresh: _handleRefresh,
               child: ListView(
@@ -488,7 +689,7 @@ class _AdminOrdersScreenState
             );
           }
 
-          final orders = snapshot.data!.reversed.toList();
+          final orders = _cachedOrders!.reversed.toList();
 
           // Sync controllers with loaded data to prevent text resetting on typing
           for (var order in orders) {
@@ -829,14 +1030,32 @@ class _AdminOrdersScreenState
                 ...orders.map((order) {
                   final deliveryNameController = _deliveryNameControllers[order.orderId]!;
                   final deliveryPhoneController = _deliveryPhoneControllers[order.orderId]!;
+                  final totalItemsCount = order.items.fold<int>(0, (sum, item) => sum + item.quantity);
+
+                  final parts = order.phoneNumber.split("| Acct:");
+                  final deliveryPhone = parts[0].replaceAll("(Alt)", "").trim();
+                  final accountPhone = parts.length > 1 ? parts[1].trim() : "";
+
+                  final List<String> defaultStatuses = [
+                    "CREATED",
+                    "CONFIRMED",
+                    "OUT_FOR_DELIVERY",
+                    "DELIVERED",
+                    "CANCELLED"
+                  ];
+                  final List<String> dropdownItems = List.from(defaultStatuses);
+                  final rawStatus = order.orderStatus.trim();
+                  if (rawStatus.isNotEmpty && !dropdownItems.contains(rawStatus)) {
+                    dropdownItems.add(rawStatus);
+                  }
+                  final String currentStatusValue = dropdownItems.contains(rawStatus)
+                      ? rawStatus
+                      : dropdownItems.first;
 
                   return Card(
-
-                    margin:
-                    const EdgeInsets.only(
+                    margin: const EdgeInsets.only(
                       bottom: 16,
                     ),
-
                     elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -845,81 +1064,110 @@ class _AdminOrdersScreenState
                         width: 0.5,
                       ),
                     ),
-
                     child: ExpansionTile(
                       shape: const Border(),
                       collapsedShape: const Border(),
-
-                      title: Text(
-                        "Order #${order.orderCode}",
-
-                        style: const TextStyle(
-                          fontWeight:
-                          FontWeight.bold,
-                        ),
-                      ),
-
-                      subtitle: Column(
-
-                        crossAxisAlignment:
-                        CrossAxisAlignment.start,
-
+                      title: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-
+                          Expanded(
+                            child: Text(
+                              "Order #${order.orderCode}",
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFF9F0A).withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(color: const Color(0xFFFF9F0A).withOpacity(0.3), width: 0.5),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.inventory_2_outlined, color: Color(0xFFFF9F0A), size: 12),
+                                const SizedBox(width: 4),
+                                Text(
+                                  "$totalItemsCount Item${totalItemsCount == 1 ? '' : 's'}",
+                                  style: const TextStyle(color: Color(0xFFFF9F0A), fontSize: 11, fontWeight: FontWeight.bold),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
                           const SizedBox(height: 6),
-
                           Text(
                             _formatDate(
                               order.createdAt,
                             ),
                           ),
-
                           const SizedBox(height: 6),
-
-                          Text(
-                            "Total Amount: ₹${order.totalAmount.toStringAsFixed(2)}",
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                              color: Color(0xFF30D158),
-                            ),
-                          ),
-
-                          const SizedBox(height: 6),
-
-                          Container(
-
-                            padding:
-                            const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 4,
-                            ),
-
-                            decoration:
-                            BoxDecoration(
-
-                              color:
-                              _statusColor(
-                                order.orderStatus,
-                              ).withOpacity(0.15),
-
-                              borderRadius:
-                              BorderRadius.circular(20),
-                            ),
-
-                            child: Text(
-                              order.orderStatus,
-
-                              style: TextStyle(
-                                color:
-                                _statusColor(
-                                  order.orderStatus,
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 6,
+                            alignment: WrapAlignment.spaceBetween,
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            children: [
+                              Text(
+                                "Total Amount: ₹${order.totalAmount.toStringAsFixed(2)}",
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                  color: Color(0xFF30D158),
                                 ),
-
-                                fontWeight:
-                                FontWeight.bold,
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: _statusColor(
+                                    order.orderStatus,
+                                  ).withOpacity(0.15),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Text(
+                                  order.orderStatus,
+                                  style: TextStyle(
+                                    color: _statusColor(
+                                      order.orderStatus,
+                                    ),
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          // 📦 Quick Action Button for Packing Team
+                          OutlinedButton.icon(
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: const Color(0xFFFF9F0A),
+                              side: const BorderSide(color: Color(0xFFFF9F0A), width: 0.8),
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              minimumSize: Size.zero,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
                               ),
                             ),
+                            icon: const Icon(Icons.inventory_2_outlined, size: 14),
+                            label: Text(
+                              "Send to Packing Team ($totalItemsCount items)",
+                              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            onPressed: () => _sharePackingList(order),
                           ),
                         ],
                       ),
@@ -1002,73 +1250,65 @@ class _AdminOrdersScreenState
                               ],
 
                               if (order.phoneNumber.contains("| Acct:") || order.phoneNumber.contains("(Alt)")) ...[
-                                Builder(
-                                  builder: (context) {
-                                    final parts = order.phoneNumber.split("| Acct:");
-                                    final deliveryPhone = parts[0].replaceAll("(Alt)", "").trim();
-                                    final accountPhone = parts.length > 1 ? parts[1].trim() : "";
-
-                                    return Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
                                       children: [
-                                        Row(
-                                          children: [
-                                            const Icon(
-                                              Icons.phone_in_talk,
-                                              size: 18,
-                                              color: Color(0xFF30D158),
-                                            ),
-                                            const SizedBox(width: 8),
-                                            Expanded(
-                                              child: Column(
-                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                        const Icon(
+                                          Icons.phone_in_talk,
+                                          size: 18,
+                                          color: Color(0xFF30D158),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Row(
                                                 children: [
-                                                  Row(
-                                                    children: [
-                                                      Text(
-                                                        deliveryPhone,
-                                                        style: const TextStyle(
-                                                          fontWeight: FontWeight.bold,
-                                                          color: Colors.white,
-                                                        ),
-                                                      ),
-                                                      const SizedBox(width: 6),
-                                                      Container(
-                                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                                        decoration: BoxDecoration(
-                                                          color: const Color(0xFF30D158).withOpacity(0.15),
-                                                          borderRadius: BorderRadius.circular(4),
-                                                          border: Border.all(color: const Color(0xFF30D158), width: 0.5),
-                                                        ),
-                                                        child: const Text(
-                                                          "Call for Delivery",
-                                                          style: TextStyle(
-                                                            color: Color(0xFF30D158),
-                                                            fontSize: 10,
-                                                            fontWeight: FontWeight.bold,
-                                                          ),
-                                                        ),
-                                                      ),
-                                                    ],
+                                                  Text(
+                                                    deliveryPhone,
+                                                    style: const TextStyle(
+                                                      fontWeight: FontWeight.bold,
+                                                      color: Colors.white,
+                                                    ),
                                                   ),
-                                                  if (accountPhone.isNotEmpty) ...[
-                                                    const SizedBox(height: 3),
-                                                    Text(
-                                                      "Account Phone: $accountPhone",
-                                                      style: const TextStyle(
-                                                        color: Color(0xFF8E8E93),
-                                                        fontSize: 12,
+                                                  const SizedBox(width: 6),
+                                                  Container(
+                                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                                    decoration: BoxDecoration(
+                                                      color: const Color(0xFF30D158).withOpacity(0.15),
+                                                      borderRadius: BorderRadius.circular(4),
+                                                      border: Border.all(color: const Color(0xFF30D158), width: 0.5),
+                                                    ),
+                                                    child: const Text(
+                                                      "Call for Delivery",
+                                                      style: TextStyle(
+                                                        color: Color(0xFF30D158),
+                                                        fontSize: 10,
+                                                        fontWeight: FontWeight.bold,
                                                       ),
                                                     ),
-                                                  ],
+                                                  ),
                                                 ],
                                               ),
-                                            ),
-                                          ],
+                                              if (accountPhone.isNotEmpty) ...[
+                                                const SizedBox(height: 3),
+                                                Text(
+                                                  "Account Phone: $accountPhone",
+                                                  style: const TextStyle(
+                                                    color: Color(0xFF8E8E93),
+                                                    fontSize: 12,
+                                                  ),
+                                                ),
+                                              ],
+                                            ],
+                                          ),
                                         ),
                                       ],
-                                    );
-                                  },
+                                    ),
+                                  ],
                                 ),
                               ] else ...[
                                 Row(
@@ -1226,25 +1466,43 @@ class _AdminOrdersScreenState
                           ),
                         ),
 
-                        const Padding(
-
-                          padding: EdgeInsets.symmetric(
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
                             horizontal: 16,
                           ),
-
-                          child: Align(
-
-                            alignment: Alignment.centerLeft,
-
-                            child: Text(
-
-                              "Ordered Products",
-
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
+                          child: Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            alignment: WrapAlignment.spaceBetween,
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            children: [
+                              const Text(
+                                "Ordered Products",
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
-                            ),
+                              ElevatedButton.icon(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFFFF9F0A).withOpacity(0.2),
+                                  foregroundColor: const Color(0xFFFF9F0A),
+                                  side: const BorderSide(color: Color(0xFFFF9F0A), width: 0.8),
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                  minimumSize: Size.zero,
+                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                ),
+                                icon: const Icon(Icons.send_to_mobile, size: 14),
+                                label: const Text(
+                                  "Send to Packing Team",
+                                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                                ),
+                                onPressed: () => _sharePackingList(order),
+                              ),
+                            ],
                           ),
                         ),
 
@@ -1360,49 +1618,44 @@ class _AdminOrdersScreenState
                                   ),
 
                                   onPressed: () async {
+                                    final name = deliveryNameController.text;
+                                    final phone = deliveryPhoneController.text;
+
+                                    if (_cachedOrders != null) {
+                                      final index = _cachedOrders!.indexWhere((o) => o.orderId == order.orderId);
+                                      if (index != -1) {
+                                        _cachedOrders![index] = _cachedOrders![index].copyWith(
+                                          deliveryBoyName: name,
+                                          deliveryBoyPhone: phone,
+                                        );
+                                        setState(() {});
+                                      }
+                                    }
 
                                     try {
-
                                       await _service.assignDeliveryBoy(
-
                                         orderId: order.orderId,
-
-                                        deliveryBoyName:
-                                        deliveryNameController.text,
-
-                                        deliveryBoyPhone:
-                                        deliveryPhoneController.text,
+                                        deliveryBoyName: name,
+                                        deliveryBoyPhone: phone,
                                       );
 
                                       if (!mounted) return;
 
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
-
+                                      ScaffoldMessenger.of(context).showSnackBar(
                                         const SnackBar(
-
-                                          content: Text(
-                                            "Delivery boy assigned",
-                                          ),
+                                          content: Text("Delivery boy assigned"),
+                                          duration: Duration(seconds: 2),
                                         ),
                                       );
-
-                                      setState(() {
-                                        _loadOrders();
-                                      });
-
                                     } catch (e) {
+                                      if (!mounted) return;
 
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
-
+                                      ScaffoldMessenger.of(context).showSnackBar(
                                         const SnackBar(
-
-                                          content: Text(
-                                            "Assignment failed",
-                                          ),
+                                          content: Text("Assignment failed"),
                                         ),
                                       );
+                                      _loadOrders(silent: true);
                                     }
                                   },
                                 ),
@@ -1414,54 +1667,22 @@ class _AdminOrdersScreenState
                         const Divider(),
 
                         Padding(
-
-                          padding:
-                          const EdgeInsets.all(16),
-
-                          child:
-                          DropdownButtonFormField<String>(
-
-                            value:
-                            order.orderStatus,
-
-                            decoration:
-                            const InputDecoration(
-                              labelText:
-                              "Update Status",
+                          padding: const EdgeInsets.all(16),
+                          child: DropdownButtonFormField<String>(
+                            value: currentStatusValue,
+                            decoration: const InputDecoration(
+                              labelText: "Update Status",
                             ),
-
-                            items: [
-
-                              "CREATED",
-
-                              "CONFIRMED",
-
-                              "OUT_FOR_DELIVERY",
-
-                              "DELIVERED",
-
-                              "CANCELLED"
-
-                            ].map((status) {
-
+                            items: dropdownItems.map((status) {
                               return DropdownMenuItem(
-
                                 value: status,
-
                                 child: Text(status),
                               );
-
                             }).toList(),
-
                             onChanged: (value) {
-
-                              if (value == null)
-                                return;
-
+                              if (value == null) return;
                               _updateStatus(
-                                orderId:
-                                order.orderId,
-
+                                orderId: order.orderId,
                                 status: value,
                               );
                             },

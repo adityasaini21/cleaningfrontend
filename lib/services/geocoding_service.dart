@@ -124,6 +124,85 @@ class GeocodingService {
     return null;
   }
 
+  /// Resolves exact (latitude, longitude) from address and pincode using Google Maps / Native / OSM
+  Future<({double lat, double lng})?> forwardGeocode({
+    required String address,
+    required String pincode,
+  }) async {
+    final query = [address, pincode].where((s) => s.trim().isNotEmpty).join(", ");
+    if (query.trim().isEmpty) return null;
+
+    // Check if coordinates already in string
+    final regex = RegExp(r'([-+]?\d{1,2}\.\d+)[,\s]+([-+]?\d{1,3}\.\d+)');
+    final match = regex.firstMatch(address);
+    if (match != null) {
+      final lat = double.tryParse(match.group(1)!);
+      final lng = double.tryParse(match.group(2)!);
+      if (lat != null && lng != null && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
+        return (lat: lat, lng: lng);
+      }
+    }
+
+    const envKey = String.fromEnvironment('GOOGLE_MAPS_API_KEY', defaultValue: '');
+    const envKeyAlt = String.fromEnvironment('MAPS_API_KEY', defaultValue: '');
+
+    String googleApiKey = envKey.trim().isNotEmpty
+        ? envKey.trim()
+        : (envKeyAlt.trim().isNotEmpty
+            ? envKeyAlt.trim()
+            : (dotenv.env['GOOGLE_MAPS_API_KEY']?.trim() ??
+                dotenv.env['GOOGLE_GEOCODING_API_KEY']?.trim() ??
+                ''));
+
+    if (googleApiKey.isNotEmpty &&
+        !googleApiKey.contains("your_actual_google_maps_key_here") &&
+        !googleApiKey.contains("placeholder")) {
+      try {
+        final uri = Uri.parse(
+          "https://maps.googleapis.com/maps/api/geocode/json?address=${Uri.encodeComponent(query)}&key=$googleApiKey",
+        );
+        final response = await http.get(uri).timeout(const Duration(seconds: 5));
+        if (response.statusCode == 200) {
+          final data = jsonDecode(response.body);
+          if (data["status"] == "OK" && (data["results"] as List).isNotEmpty) {
+            final loc = data["results"][0]["geometry"]["location"];
+            final lat = (loc["lat"] as num).toDouble();
+            final lng = (loc["lng"] as num).toDouble();
+            return (lat: lat, lng: lng);
+          }
+        }
+      } catch (e) {
+        debugPrint("[GEOCODING] Google forward geocode error: $e");
+      }
+    }
+
+    // Native fallback
+    try {
+      final locations = await Geocoding().locationFromAddress(query);
+      if (locations.isNotEmpty) {
+        return (lat: locations.first.latitude, lng: locations.first.longitude);
+      }
+    } catch (_) {}
+
+    // OpenStreetMap fallback
+    try {
+      final osmUri = Uri.parse("https://nominatim.openstreetmap.org/search?q=${Uri.encodeComponent(query)}&format=json&limit=1");
+      final osmRes = await http.get(osmUri, headers: {"User-Agent": "NuKleanApp/1.0"}).timeout(const Duration(seconds: 4));
+      if (osmRes.statusCode == 200) {
+        final List<dynamic> list = jsonDecode(osmRes.body);
+        if (list.isNotEmpty) {
+          final lat = double.tryParse(list.first["lat"].toString());
+          final lng = double.tryParse(list.first["lon"].toString());
+          if (lat != null && lng != null) {
+            return (lat: lat, lng: lng);
+          }
+        }
+      }
+    } catch (_) {}
+
+    return null;
+  }
+
   /// Fire-and-forget telemetry to backend logs
   void _sendLogToBackend(String optionName, GeocodedAddress addr, double lat, double lng) {
     Future.microtask(() async {

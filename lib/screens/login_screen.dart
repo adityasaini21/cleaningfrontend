@@ -307,7 +307,9 @@ class _LoginScreenState extends State<LoginScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          _adminLoginMode ? "Admin Login" : "Login",
+          _adminLoginMode
+              ? "Admin Login"
+              : (_isNewUser ? "Sign Up" : "Login"),
         ),
         centerTitle: true,
       ),
@@ -346,7 +348,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     const SizedBox(height: 24),
 
                     Text(
-                      _adminLoginMode ? "Admin Login" : "Welcome Back",
+                      _adminLoginMode
+                          ? "Admin Login"
+                          : (_isNewUser ? "Let's Get Started" : "Welcome Back"),
                       style: const TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
@@ -359,7 +363,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     Text(
                       _adminLoginMode
                           ? "Login to access the admin panel"
-                          : "Login to continue",
+                          : (_isNewUser
+                              ? "Sign up to get started with NuKlean"
+                              : "Login to continue"),
                       style: const TextStyle(
                         fontSize: 16,
                         color: Color(0xFF8E8E93), // iOS System Gray
@@ -540,6 +546,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     onTap: () {
                                       setState(() {
                                         _otpSent = false;
+                                        _isNewUser = false;
                                         _otpController.clear();
                                         _resendTimer?.cancel();
                                         _canResend = false;

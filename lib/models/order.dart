@@ -64,6 +64,36 @@ class OrderModel {
     required this.items,
   });
 
+  OrderModel copyWith({
+    int? orderId,
+    String? orderStatus,
+    String? paymentStatus,
+    double? totalAmount,
+    String? shippingAddress,
+    String? phoneNumber,
+    String? customerName,
+    String? pincode,
+    String? deliveryBoyName,
+    String? deliveryBoyPhone,
+    DateTime? createdAt,
+    List<OrderItemModel>? items,
+  }) {
+    return OrderModel(
+      orderId: orderId ?? this.orderId,
+      orderStatus: orderStatus ?? this.orderStatus,
+      paymentStatus: paymentStatus ?? this.paymentStatus,
+      totalAmount: totalAmount ?? this.totalAmount,
+      shippingAddress: shippingAddress ?? this.shippingAddress,
+      phoneNumber: phoneNumber ?? this.phoneNumber,
+      customerName: customerName ?? this.customerName,
+      pincode: pincode ?? this.pincode,
+      deliveryBoyName: deliveryBoyName ?? this.deliveryBoyName,
+      deliveryBoyPhone: deliveryBoyPhone ?? this.deliveryBoyPhone,
+      createdAt: createdAt ?? this.createdAt,
+      items: items ?? this.items,
+    );
+  }
+
   factory OrderModel.fromJson(Map<String, dynamic> json) {
 
     return OrderModel(

@@ -1432,6 +1432,81 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                       const SizedBox(height: 28),
 
+                      // Section Title: Appearance
+                      const Align(
+                        alignment: Alignment.centerLeft,
+                        child: Padding(
+                          padding: EdgeInsets.only(left: 8, bottom: 8),
+                          child: Text(
+                            "APPEARANCE",
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.grey,
+                              letterSpacing: 1.2,
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      // Grouped Card: Theme Switcher (Coming Soon)
+                      _buildSettingsGroup([
+                        ListTile(
+                          leading: const Icon(
+                            Icons.dark_mode_outlined,
+                            color: Colors.amber,
+                          ),
+                          title: Wrap(
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            spacing: 8,
+                            runSpacing: 4,
+                            children: [
+                              const Text(
+                                "App Theme",
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: Colors.orange.withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: const Text(
+                                  "Coming Soon",
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.orangeAccent,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          subtitle: const Text(
+                            "Dark theme active (Light mode coming soon)",
+                            style: TextStyle(color: Colors.grey, fontSize: 12),
+                          ),
+                          trailing: const Icon(
+                            Icons.lock_clock_outlined,
+                            color: Colors.grey,
+                            size: 18,
+                          ),
+                          onTap: () {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text("Light Theme option is coming soon!"),
+                                duration: Duration(seconds: 2),
+                              ),
+                            );
+                          },
+                        ),
+                      ]),
+
+                      const SizedBox(height: 28),
+
                       // Section Title: Help & Support (Moved to Bottom)
                       const Align(
                         alignment: Alignment.centerLeft,

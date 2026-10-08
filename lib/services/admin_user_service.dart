@@ -51,6 +51,7 @@ class AdminUserService {
         "$baseUrl/admin/users/$userId/toggle-status",
       ),
       headers: headers,
+      body: jsonEncode({}),
     );
 
     print("TOGGLE USER STATUS: ${response.statusCode}");
@@ -62,10 +63,35 @@ class AdminUserService {
       );
     }
 
-    throw Exception(
-      response.body.isNotEmpty
-          ? response.body
-          : "Failed to toggle user status",
+    String errorMsg = "Failed to toggle user status";
+    try {
+      if (response.body.isNotEmpty) {
+        final errJson = jsonDecode(response.body);
+        if (errJson is Map && errJson.containsKey("error")) {
+          errorMsg = errJson["error"].toString();
+        } else if (errJson is Map && errJson.containsKey("message")) {
+          errorMsg = errJson["message"].toString();
+        } else {
+          errorMsg = response.body;
+        }
+      }
+    } catch (_) {
+      if (response.body.isNotEmpty) {
+        errorMsg = response.body;
+      }
+    }
+
+    throw Exception(errorMsg);
+  }
+
+  Future<void> clearBlockedUsers() async {
+    final response = await ApiClient.delete(
+      Uri.parse("$baseUrl/admin/users/clear-blocked"),
+      headers: headers,
     );
+
+    if (response.statusCode != 200) {
+      throw Exception("Failed to clear blocked users");
+    }
   }
 }
