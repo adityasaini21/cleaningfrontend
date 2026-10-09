@@ -166,6 +166,7 @@ class NotificationService {
         "Authorization":
         "Bearer ${AuthService.token}",
       },
+      ignoreUnauthorized: true,
     );
 
     if (response.statusCode == 200) {

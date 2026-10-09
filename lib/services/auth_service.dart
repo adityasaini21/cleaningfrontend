@@ -242,6 +242,7 @@ class AuthService {
         body: jsonEncode({
           "fcmToken": fcmToken,
         }),
+        ignoreUnauthorized: true,
       );
 
       print("SAVE FCM STATUS: ${response.statusCode}");

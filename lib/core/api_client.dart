@@ -17,27 +17,27 @@ class ApiClient {
     _maintenanceController.add(null);
   }
 
-  static Future<http.Response> get(Uri url, {Map<String, String>? headers}) async {
+  static Future<http.Response> get(Uri url, {Map<String, String>? headers, bool ignoreUnauthorized = false}) async {
     final response = await http.get(url, headers: headers);
-    _checkResponse(response);
+    if (!ignoreUnauthorized) _checkResponse(response);
     return response;
   }
 
-  static Future<http.Response> post(Uri url, {Map<String, String>? headers, Object? body, Encoding? encoding}) async {
+  static Future<http.Response> post(Uri url, {Map<String, String>? headers, Object? body, Encoding? encoding, bool ignoreUnauthorized = false}) async {
     final response = await http.post(url, headers: headers, body: body, encoding: encoding);
-    _checkResponse(response);
+    if (!ignoreUnauthorized) _checkResponse(response);
     return response;
   }
 
-  static Future<http.Response> put(Uri url, {Map<String, String>? headers, Object? body, Encoding? encoding}) async {
+  static Future<http.Response> put(Uri url, {Map<String, String>? headers, Object? body, Encoding? encoding, bool ignoreUnauthorized = false}) async {
     final response = await http.put(url, headers: headers, body: body, encoding: encoding);
-    _checkResponse(response);
+    if (!ignoreUnauthorized) _checkResponse(response);
     return response;
   }
 
-  static Future<http.Response> delete(Uri url, {Map<String, String>? headers, Object? body, Encoding? encoding}) async {
+  static Future<http.Response> delete(Uri url, {Map<String, String>? headers, Object? body, Encoding? encoding, bool ignoreUnauthorized = false}) async {
     final response = await http.delete(url, headers: headers, body: body, encoding: encoding);
-    _checkResponse(response);
+    if (!ignoreUnauthorized) _checkResponse(response);
     return response;
   }
 

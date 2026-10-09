@@ -168,7 +168,7 @@ class _MainNavigationScreenState
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text(
-          "Your account has been deactivated. Logged out.",
+          "Session expired. Please log in again.",
         ),
         backgroundColor: Colors.redAccent,
         duration: Duration(seconds: 4),
